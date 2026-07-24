@@ -13,12 +13,12 @@ export const createCaseSchema = z.object({
     .max(2000, "Description must be at most 2000 characters"),
   dealer_id: z
     .string()
-    .min(3, "Dealer ID is required")
-    .max(32, "Dealer ID is too long"),
+    .min(3, "Account ID is required")
+    .max(32, "Account ID is too long"),
   wallet_id: z
     .string()
-    .min(3, "Wallet ID is required")
-    .max(32, "Wallet ID is too long"),
+    .min(3, "Reference ID is required")
+    .max(32, "Reference ID is too long"),
   adjustment_amount: z.coerce
     .number({ invalid_type_error: "Enter a valid amount" })
     .positive("Amount must be greater than zero")
@@ -79,3 +79,20 @@ export const caseListFilterSchema = z.object({
 });
 
 export type CaseListFilterInput = z.infer<typeof caseListFilterSchema>;
+
+export const assignAgentSchema = z.object({
+  caseId: z.string().uuid("Invalid case ID"),
+  agentId: z.string().uuid("Select an agent"),
+});
+
+export type AssignAgentInput = z.infer<typeof assignAgentSchema>;
+
+export const addCommentSchema = z.object({
+  caseId: z.string().uuid("Invalid case ID"),
+  body: z
+    .string()
+    .min(1, "Comment cannot be empty")
+    .max(2000, "Comment is too long"),
+});
+
+export type AddCommentInput = z.infer<typeof addCommentSchema>;

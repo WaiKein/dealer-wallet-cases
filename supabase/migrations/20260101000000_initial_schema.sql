@@ -1,4 +1,4 @@
--- Dealer Wallet Adjustment Case Management - Initial Schema
+-- Case Management - Initial Schema
 
 -- Enums
 CREATE TYPE public.user_role AS ENUM (
@@ -131,57 +131,59 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.cases ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.case_audit_history ENABLE ROW LEVEL SECURITY;
 
--- Profiles policies
-CREATE POLICY "Users can view own profile"
-  ON public.profiles FOR SELECT
-  USING (auth.uid() = id);
+-- Role helper avoids recursive RLS between profiles <-> cases policies.
+CREATE OR REPLACE FUNCTION public.get_my_role()
+RETURNS public.user_role
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT role FROM public.profiles WHERE id = auth.uid();
+$$;
 
-CREATE POLICY "Users can view profiles of case participants"
-  ON public.profiles FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.cases c
-      WHERE c.requester_id = profiles.id
-         OR c.assigned_agent_id = profiles.id
-         OR c.approver_id = profiles.id
-    )
+CREATE OR REPLACE FUNCTION public.can_view_profile(target_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT
+    target_id = auth.uid()
+    OR public.get_my_role() IN ('operations_agent', 'approver')
     OR EXISTS (
-      SELECT 1 FROM public.profiles p
-      WHERE p.id = auth.uid()
-        AND p.role IN ('operations_agent', 'approver')
-    )
-  );
+      SELECT 1 FROM public.cases c
+      WHERE c.requester_id = target_id
+         OR c.assigned_agent_id = target_id
+         OR c.approver_id = target_id
+    );
+$$;
+
+-- Profiles policies
+CREATE POLICY "Users can view profiles"
+  ON public.profiles FOR SELECT
+  USING (public.can_view_profile(id));
 
 -- Cases policies
-CREATE POLICY "Requesters view own cases"
+CREATE POLICY "Users view accessible cases"
   ON public.cases FOR SELECT
   USING (
     requester_id = auth.uid()
-    OR EXISTS (
-      SELECT 1 FROM public.profiles p
-      WHERE p.id = auth.uid()
-        AND p.role IN ('operations_agent', 'approver')
-    )
+    OR public.get_my_role() IN ('operations_agent', 'approver')
   );
 
 CREATE POLICY "Requesters create cases"
   ON public.cases FOR INSERT
   WITH CHECK (
     requester_id = auth.uid()
-    AND EXISTS (
-      SELECT 1 FROM public.profiles p
-      WHERE p.id = auth.uid() AND p.role = 'requester'
-    )
+    AND public.get_my_role() = 'requester'
   );
 
 CREATE POLICY "Authorized roles update cases"
   ON public.cases FOR UPDATE
   USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles p
-      WHERE p.id = auth.uid()
-        AND p.role IN ('operations_agent', 'approver')
-    )
+    public.get_my_role() IN ('operations_agent', 'approver')
     OR (
       requester_id = auth.uid()
       AND status = 'SUBMITTED'
@@ -197,11 +199,7 @@ CREATE POLICY "View audit history for accessible cases"
       WHERE c.id = case_audit_history.case_id
         AND (
           c.requester_id = auth.uid()
-          OR EXISTS (
-            SELECT 1 FROM public.profiles p
-            WHERE p.id = auth.uid()
-              AND p.role IN ('operations_agent', 'approver')
-          )
+          OR public.get_my_role() IN ('operations_agent', 'approver')
         )
     )
   );
@@ -210,13 +208,16 @@ CREATE POLICY "Insert audit history for accessible cases"
   ON public.case_audit_history FOR INSERT
   WITH CHECK (
     changed_by = auth.uid()
+    AND public.get_my_role() IN ('requester', 'operations_agent', 'approver')
     AND EXISTS (
       SELECT 1 FROM public.cases c
       WHERE c.id = case_audit_history.case_id
-        AND EXISTS (
-          SELECT 1 FROM public.profiles p
-          WHERE p.id = auth.uid()
-            AND p.role IN ('requester', 'operations_agent', 'approver')
-        )
     )
   );
+
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT SELECT ON public.profiles TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON public.cases TO authenticated;
+GRANT SELECT, INSERT ON public.case_audit_history TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_my_role() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.can_view_profile(UUID) TO authenticated;

@@ -41,7 +41,7 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
         <div>
           <h1 className="text-2xl font-semibold">Cases</h1>
           <p className="text-muted-foreground">
-            Track dealer wallet adjustment requests through the workflow.
+            Track requests through the case workflow.
           </p>
         </div>
         {canCreateCase(profile.role) && (

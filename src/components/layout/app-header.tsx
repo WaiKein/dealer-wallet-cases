@@ -11,10 +11,13 @@ export async function AppHeader() {
     <header className="border-b bg-background">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
         <div className="flex items-center gap-6">
-          <Link href="/cases" className="text-lg font-semibold">
-            Dealer Wallet Cases
+          <Link href="/dashboard" className="text-lg font-semibold">
+            Case Management
           </Link>
           <nav className="hidden gap-4 text-sm md:flex">
+            <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">
+              Dashboard
+            </Link>
             <Link href="/cases" className="text-muted-foreground hover:text-foreground">
               Cases
             </Link>

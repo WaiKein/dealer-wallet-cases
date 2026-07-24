@@ -1,6 +1,6 @@
-# Dealer Wallet Adjustment Case Management (POC)
+# Case Management (POC)
 
-Proof-of-concept application for managing dealer wallet adjustment cases with role-based workflow, audit history, and Supabase-backed persistence.
+Proof-of-concept application for managing cases with role-based workflow, audit history, and Supabase-backed persistence.
 
 ## Stack
 

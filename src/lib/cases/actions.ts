@@ -138,7 +138,8 @@ export async function transitionCaseStatus(
   };
 
   if (parsed.data.nextStatus === "UNDER_REVIEW") {
-    updatePayload.assigned_agent_id = profile.id;
+    updatePayload.assigned_agent_id =
+      existingCase.assigned_agent_id ?? profile.id;
   }
 
   if (parsed.data.nextStatus === "APPROVED" || parsed.data.nextStatus === "REJECTED") {

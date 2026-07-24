@@ -19,7 +19,7 @@ export async function signIn(
     return { success: false, error: error.message };
   }
 
-  redirect("/cases");
+  redirect("/dashboard");
 }
 
 export async function signOut(): Promise<void> {

@@ -29,12 +29,19 @@ export function CaseFilters() {
   const currentSearch = searchParams.get("search") ?? "";
 
   function updateFilters(status: string, search: string) {
-    const params = new URLSearchParams();
-    if (status && status !== "all") {
-      params.set("status", status);
+    const nextStatus = status || "all";
+    const nextSearch = search.trim();
+    // Avoid remount loops: Radix Select can fire onValueChange on mount.
+    if (nextStatus === currentStatus && nextSearch === currentSearch) {
+      return;
     }
-    if (search.trim()) {
-      params.set("search", search.trim());
+
+    const params = new URLSearchParams();
+    if (nextStatus !== "all") {
+      params.set("status", nextStatus);
+    }
+    if (nextSearch) {
+      params.set("search", nextSearch);
     }
     const query = params.toString();
     router.push(query ? `/cases?${query}` : "/cases");
@@ -60,7 +67,7 @@ export function CaseFilters() {
           id="search"
           name="search"
           defaultValue={currentSearch}
-          placeholder="Case number, title, dealer, wallet"
+          placeholder="Case number, title, account, reference"
         />
       </div>
 
@@ -68,13 +75,7 @@ export function CaseFilters() {
         <label htmlFor="status" className="text-sm font-medium">
           Status
         </label>
-        <Select
-          name="status"
-          defaultValue={currentStatus}
-          onValueChange={(value) =>
-            updateFilters(value, currentSearch)
-          }
-        >
+        <Select name="status" defaultValue={currentStatus}>
           <SelectTrigger id="status">
             <SelectValue placeholder="All statuses" />
           </SelectTrigger>

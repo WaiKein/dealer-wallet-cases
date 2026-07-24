@@ -69,9 +69,9 @@ export function CaseForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>New wallet adjustment case</CardTitle>
+        <CardTitle>New case</CardTitle>
         <CardDescription>
-          Submit a request for a dealer wallet credit or debit adjustment.
+          Submit a request for a credit or debit adjustment.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -101,16 +101,16 @@ export function CaseForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="dealer_id">Dealer ID</Label>
-              <Input id="dealer_id" name="dealer_id" placeholder="DLR-10042" disabled={isPending} />
+              <Label htmlFor="dealer_id">Account ID</Label>
+              <Input id="dealer_id" name="dealer_id" placeholder="ACC-10042" disabled={isPending} />
               {fieldErrors.dealer_id && (
                 <p className="text-sm text-destructive">{fieldErrors.dealer_id}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="wallet_id">Wallet ID</Label>
-              <Input id="wallet_id" name="wallet_id" placeholder="WLT-88421" disabled={isPending} />
+              <Label htmlFor="wallet_id">Reference ID</Label>
+              <Input id="wallet_id" name="wallet_id" placeholder="REF-88421" disabled={isPending} />
               {fieldErrors.wallet_id && (
                 <p className="text-sm text-destructive">{fieldErrors.wallet_id}</p>
               )}

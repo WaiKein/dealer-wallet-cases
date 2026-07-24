@@ -48,12 +48,14 @@ export function LoginForm() {
     });
   }
 
+  const authError = searchParams.get("error");
+
   return (
-    <Card className="w-full max-w-md">
+    <Card className="w-full max-w-md border-slate-200 bg-white shadow-md">
       <CardHeader>
-        <CardTitle>Dealer Wallet Cases</CardTitle>
+        <CardTitle>Case Management</CardTitle>
         <CardDescription>
-          Sign in to manage wallet adjustment cases.
+          Sign in to manage cases through the workflow.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -65,7 +67,16 @@ export function LoginForm() {
             </Alert>
           )}
 
-          {searchParams.get("redirectTo") && (
+          {authError && (
+            <Alert className="border-destructive/50 bg-destructive/10">
+              <AlertTitle>Session expired</AlertTitle>
+              <AlertDescription>
+                Please sign in again to continue.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {searchParams.get("redirectTo") && !authError && (
             <Alert>
               <AlertDescription>
                 Please sign in to continue to the requested page.

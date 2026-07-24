@@ -48,11 +48,35 @@ export interface CaseAuditEntry {
   created_at: string;
 }
 
+export interface CaseComment {
+  id: string;
+  case_id: string;
+  author_id: string;
+  body: string;
+  created_at: string;
+  author?: Pick<Profile, "id" | "full_name" | "email" | "role">;
+}
+
+export interface CaseAttachment {
+  id: string;
+  case_id: string;
+  uploaded_by: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  mime_type: string;
+  created_at: string;
+  uploader?: Pick<Profile, "id" | "full_name" | "email">;
+  signed_url?: string | null;
+}
+
 export interface CaseWithRelations extends CaseRecord {
   requester?: Pick<Profile, "id" | "full_name" | "email">;
   assigned_agent?: Pick<Profile, "id" | "full_name" | "email"> | null;
   approver?: Pick<Profile, "id" | "full_name" | "email"> | null;
   audit_history?: CaseAuditEntry[];
+  comments?: CaseComment[];
+  attachments?: CaseAttachment[];
 }
 
 export interface ActionResult<T = void> {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  canAssignAgent,
   canCreateCase,
   canTransition,
   canViewAllCases,
@@ -17,6 +18,13 @@ describe("role permissions", () => {
     expect(canViewAllCases("requester")).toBe(false);
     expect(canViewAllCases("operations_agent")).toBe(true);
     expect(canViewAllCases("approver")).toBe(true);
+  });
+
+  it("allows agents to assign during early workflow statuses", () => {
+    expect(canAssignAgent("operations_agent", "SUBMITTED")).toBe(true);
+    expect(canAssignAgent("operations_agent", "UNDER_REVIEW")).toBe(true);
+    expect(canAssignAgent("operations_agent", "PENDING_APPROVAL")).toBe(false);
+    expect(canAssignAgent("approver", "SUBMITTED")).toBe(false);
   });
 });
 

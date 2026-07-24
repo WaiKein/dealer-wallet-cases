@@ -75,3 +75,18 @@ export function canCreateCase(role: UserRole): boolean {
 export function canViewAllCases(role: UserRole): boolean {
   return role === "operations_agent" || role === "approver";
 }
+
+export function canAssignAgent(role: UserRole, status: CaseStatus): boolean {
+  return (
+    role === "operations_agent" &&
+    (status === "SUBMITTED" || status === "UNDER_REVIEW")
+  );
+}
+
+export function canCommentOnCase(role: UserRole): boolean {
+  return (
+    role === "requester" ||
+    role === "operations_agent" ||
+    role === "approver"
+  );
+}

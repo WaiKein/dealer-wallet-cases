@@ -21,7 +21,7 @@ export function CaseList({ cases }: CaseListProps) {
       <div className="hidden grid-cols-12 gap-4 border-b bg-muted/40 px-4 py-3 text-sm font-medium md:grid">
         <div className="col-span-2">Case #</div>
         <div className="col-span-3">Title</div>
-        <div className="col-span-2">Dealer</div>
+        <div className="col-span-2">Account</div>
         <div className="col-span-2">Amount</div>
         <div className="col-span-2">Status</div>
         <div className="col-span-1">Updated</div>

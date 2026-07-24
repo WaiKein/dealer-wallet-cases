@@ -2,7 +2,7 @@
 # Prerequisites: Node.js, Docker Desktop (running), Supabase CLI
 
 $ErrorActionPreference = "Stop"
-$ProjectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 Set-Location $ProjectRoot
 
 Write-Host "Checking Docker..."
@@ -33,7 +33,8 @@ NEXT_PUBLIC_SUPABASE_URL=$apiUrl
 NEXT_PUBLIC_SUPABASE_ANON_KEY=$anonKey
 "@
 
-Set-Content -Path ".env.local" -Value $envContent -Encoding UTF8
+# Write without BOM so Next.js can read env keys reliably
+[System.IO.File]::WriteAllText((Join-Path $ProjectRoot ".env.local"), $envContent + "`n")
 Write-Host "Wrote .env.local"
 
 Write-Host ""
