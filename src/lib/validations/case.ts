@@ -12,14 +12,18 @@ export const createCaseSchema = z.object({
     .string()
     .min(20, "Description must be at least 20 characters")
     .max(2000, "Description must be at most 2000 characters"),
-  dealer_id: z
-    .string()
-    .min(3, "Account ID is required")
-    .max(32, "Account ID is too long"),
+  /** Optional external-system reference; leave empty for SILO auto-generation. */
   wallet_id: z
     .string()
-    .min(3, "Reference ID is required")
-    .max(32, "Reference ID is too long"),
+    .max(32, "Reference ID is too long")
+    .optional()
+    .transform((value) => {
+      const trimmed = value?.trim();
+      return trimmed ? trimmed : undefined;
+    })
+    .refine((value) => value === undefined || value.length >= 3, {
+      message: "Reference ID must be at least 3 characters",
+    }),
   adjustment_amount: z.coerce
     .number({ invalid_type_error: "Enter a valid amount" })
     .positive("Amount must be greater than zero")

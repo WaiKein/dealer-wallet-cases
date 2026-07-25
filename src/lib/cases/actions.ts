@@ -6,6 +6,7 @@ import { applyAssignmentRules } from "@/lib/assignment/service";
 import { canTransition, canCreateCase } from "@/lib/auth/permissions";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { recordAuditEntry } from "@/lib/cases/audit";
+import { generateAccountId, generateReferenceId } from "@/lib/cases/ids";
 import { notifyUsers } from "@/lib/notifications/service";
 import {
   completeSla,
@@ -63,13 +64,18 @@ export async function createCase(
     return { success: false, error: "Invalid category or subcategory." };
   }
 
+  // Account ID is always system-assigned. Reference ID is optional: use the
+  // provided external ID when present, otherwise generate a SILO local reference.
+  const dealerId = generateAccountId();
+  const walletId = parsed.data.wallet_id ?? generateReferenceId();
+
   const { data, error } = await supabase
     .from("cases")
     .insert({
       title: parsed.data.title,
       description: parsed.data.description,
-      dealer_id: parsed.data.dealer_id,
-      wallet_id: parsed.data.wallet_id,
+      dealer_id: dealerId,
+      wallet_id: walletId,
       adjustment_amount: parsed.data.adjustment_amount,
       adjustment_type: parsed.data.adjustment_type,
       currency: parsed.data.currency,

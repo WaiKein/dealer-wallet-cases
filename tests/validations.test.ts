@@ -6,12 +6,10 @@ import {
 } from "@/lib/validations/case";
 
 describe("createCaseSchema", () => {
-  it("accepts valid case input", () => {
+  it("accepts valid case input without account or reference IDs", () => {
     const result = createCaseSchema.safeParse({
       title: "Duplicate deposit correction",
       description: "Dealer reported a duplicate wallet credit from batch DEP-8842.",
-      dealer_id: "DLR-10042",
-      wallet_id: "WLT-88421",
       adjustment_amount: 1250,
       adjustment_type: "debit",
       currency: "USD",
@@ -23,12 +21,29 @@ describe("createCaseSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("accepts an optional external reference ID", () => {
+    const result = createCaseSchema.safeParse({
+      title: "Duplicate deposit correction",
+      description: "Dealer reported a duplicate wallet credit from batch DEP-8842.",
+      wallet_id: "EXT-SYS-88901",
+      adjustment_amount: 1250,
+      adjustment_type: "debit",
+      currency: "USD",
+      category_id: "c1000000-0000-0000-0000-000000000001",
+      subcategory_id: "c2000000-0000-0000-0000-000000000001",
+      priority: "medium",
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.wallet_id).toBe("EXT-SYS-88901");
+    }
+  });
+
   it("rejects non-positive amounts", () => {
     const result = createCaseSchema.safeParse({
       title: "Invalid amount case",
       description: "This case should fail because the amount is zero.",
-      dealer_id: "DLR-10042",
-      wallet_id: "WLT-88421",
       adjustment_amount: 0,
       adjustment_type: "credit",
       currency: "USD",

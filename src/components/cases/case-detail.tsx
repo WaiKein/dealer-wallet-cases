@@ -71,7 +71,7 @@ export function CaseDetail({
               <CardDescription>Adjustment request information</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
-              <DetailItem label="Account ID" value={caseData.dealer_id} />
+              <DetailItem label="Account ID (system)" value={caseData.dealer_id} />
               <DetailItem label="Reference ID" value={caseData.wallet_id} />
               <DetailItem
                 label="Adjustment"

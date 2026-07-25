@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createCase } from "@/lib/cases/actions";
+import { suggestReferenceIds } from "@/lib/cases/ids";
 import { createCaseSchema } from "@/lib/validations/case";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,12 +39,22 @@ export function CaseForm({ categories, subcategories }: CaseFormProps) {
   const [categoryId, setCategoryId] = useState<string>("");
   const [subcategoryId, setSubcategoryId] = useState<string>("");
   const [priority, setPriority] = useState<string>("medium");
+  const [referenceId, setReferenceId] = useState("");
+  const [referenceSuggestions, setReferenceSuggestions] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setReferenceSuggestions(suggestReferenceIds(3));
+  }, []);
 
   const filteredSubcategories = useMemo(
     () => subcategories.filter((item) => item.category_id === categoryId),
     [subcategories, categoryId]
   );
+
+  function refreshSuggestions() {
+    setReferenceSuggestions(suggestReferenceIds(3));
+  }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -54,8 +65,7 @@ export function CaseForm({ categories, subcategories }: CaseFormProps) {
     const raw = {
       title: formData.get("title"),
       description: formData.get("description"),
-      dealer_id: formData.get("dealer_id"),
-      wallet_id: formData.get("wallet_id"),
+      wallet_id: referenceId,
       adjustment_amount: formData.get("adjustment_amount"),
       adjustment_type: adjustmentType,
       currency: formData.get("currency") || "USD",
@@ -88,7 +98,9 @@ export function CaseForm({ categories, subcategories }: CaseFormProps) {
       <CardHeader>
         <CardTitle>New case</CardTitle>
         <CardDescription>
-          Submit a request for a credit or debit adjustment.
+          Submit a request for a credit or debit adjustment. Account ID is
+          assigned by the system. Reference ID is optional until external
+          integrations are available.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -184,20 +196,53 @@ export function CaseForm({ categories, subcategories }: CaseFormProps) {
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="dealer_id">Account ID</Label>
-              <Input id="dealer_id" name="dealer_id" placeholder="ACC-10042" disabled={isPending} />
-              {fieldErrors.dealer_id && (
-                <p className="text-sm text-destructive">{fieldErrors.dealer_id}</p>
-              )}
+            <div className="space-y-2 md:col-span-2 rounded-lg border bg-muted/30 p-3">
+              <p className="text-sm font-medium">Account ID</p>
+              <p className="text-sm text-muted-foreground">
+                Assigned automatically by the system when you submit (mandatory).
+              </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="wallet_id">Reference ID</Label>
-              <Input id="wallet_id" name="wallet_id" placeholder="REF-88421" disabled={isPending} />
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="wallet_id">Reference ID (optional)</Label>
+              <Input
+                id="wallet_id"
+                name="wallet_id"
+                value={referenceId}
+                onChange={(event) => setReferenceId(event.target.value)}
+                placeholder="External system ID, or leave blank to auto-generate"
+                disabled={isPending}
+              />
+              <p className="text-xs text-muted-foreground">
+                Use an external system reference when available. In SILO mode,
+                leave blank or pick a generated local reference below.
+              </p>
               {fieldErrors.wallet_id && (
                 <p className="text-sm text-destructive">{fieldErrors.wallet_id}</p>
               )}
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                {referenceSuggestions.map((suggestion) => (
+                  <Button
+                    key={suggestion}
+                    type="button"
+                    variant={referenceId === suggestion ? "default" : "outline"}
+                    size="sm"
+                    disabled={isPending}
+                    onClick={() => setReferenceId(suggestion)}
+                  >
+                    {suggestion}
+                  </Button>
+                ))}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={isPending}
+                  onClick={refreshSuggestions}
+                >
+                  Refresh suggestions
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-2">

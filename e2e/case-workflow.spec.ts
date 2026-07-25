@@ -43,8 +43,6 @@ test("submit case and automatically assign group", async ({ page }) => {
   await page
     .getByLabel("Description")
     .fill("Playwright creates a case that should match wallet duplicate rules.");
-  await page.getByLabel("Account ID").fill("ACC-E2E-001");
-  await page.getByLabel("Reference ID").fill("REF-E2E-001");
   await page.getByLabel("Adjustment amount").fill("125.50");
 
   await page.getByLabel("Adjustment type").click();
