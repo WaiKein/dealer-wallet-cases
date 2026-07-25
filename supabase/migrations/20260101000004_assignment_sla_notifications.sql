@@ -1,13 +1,9 @@
 -- Assignment groups, categories, SLA tracking, notifications (multi-tenant ready)
+-- Depends on 20260101000003_extend_enums.sql for team_lead / waiting statuses.
 
 -- ---------------------------------------------------------------------------
 -- Enums
 -- ---------------------------------------------------------------------------
-ALTER TYPE public.user_role ADD VALUE IF NOT EXISTS 'team_lead';
-
-ALTER TYPE public.case_status ADD VALUE IF NOT EXISTS 'WAITING_FOR_REQUESTER';
-ALTER TYPE public.case_status ADD VALUE IF NOT EXISTS 'WAITING_FOR_EXTERNAL_PARTY';
-
 CREATE TYPE public.case_priority AS ENUM ('low', 'medium', 'high', 'critical');
 
 CREATE TYPE public.lead_authorization_mode AS ENUM ('role', 'membership', 'both');
