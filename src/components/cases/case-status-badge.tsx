@@ -9,6 +9,9 @@ export function getStatusBadgeVariant(status: CaseStatus): BadgeProps["variant"]
       return "secondary";
     case "UNDER_REVIEW":
       return "default";
+    case "WAITING_FOR_REQUESTER":
+    case "WAITING_FOR_EXTERNAL_PARTY":
+      return "warning";
     case "PENDING_APPROVAL":
       return "warning";
     case "APPROVED":

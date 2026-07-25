@@ -54,7 +54,13 @@ export function StatusActionButtons({
         caseId,
         nextStatus: selectedStatus as Extract<
           CaseStatus,
-          "UNDER_REVIEW" | "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "RESOLVED"
+          | "UNDER_REVIEW"
+          | "WAITING_FOR_REQUESTER"
+          | "WAITING_FOR_EXTERNAL_PARTY"
+          | "PENDING_APPROVAL"
+          | "APPROVED"
+          | "REJECTED"
+          | "RESOLVED"
         >,
         comment: comment || undefined,
         rejection_reason: rejectionReason || undefined,
@@ -146,7 +152,7 @@ export function StatusActionButtons({
 
           {selectedTransition?.requiresComment && (
             <p className="text-xs text-muted-foreground">
-              A comment is required when rejecting from this stage.
+              A comment is required for this action.
             </p>
           )}
 

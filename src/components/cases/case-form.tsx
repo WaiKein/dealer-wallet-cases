@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createCase } from "@/lib/cases/actions";
 import { createCaseSchema } from "@/lib/validations/case";
@@ -23,13 +23,27 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import type { Category, Subcategory } from "@/types";
 
-export function CaseForm() {
+interface CaseFormProps {
+  categories: Category[];
+  subcategories: Subcategory[];
+}
+
+export function CaseForm({ categories, subcategories }: CaseFormProps) {
   const router = useRouter();
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [adjustmentType, setAdjustmentType] = useState<string>("");
+  const [categoryId, setCategoryId] = useState<string>("");
+  const [subcategoryId, setSubcategoryId] = useState<string>("");
+  const [priority, setPriority] = useState<string>("medium");
   const [isPending, startTransition] = useTransition();
+
+  const filteredSubcategories = useMemo(
+    () => subcategories.filter((item) => item.category_id === categoryId),
+    [subcategories, categoryId]
+  );
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -45,6 +59,9 @@ export function CaseForm() {
       adjustment_amount: formData.get("adjustment_amount"),
       adjustment_type: adjustmentType,
       currency: formData.get("currency") || "USD",
+      category_id: categoryId,
+      subcategory_id: subcategoryId,
+      priority,
     };
 
     const parsed = createCaseSchema.safeParse(raw);
@@ -97,6 +114,73 @@ export function CaseForm() {
               <Textarea id="description" name="description" rows={4} disabled={isPending} />
               {fieldErrors.description && (
                 <p className="text-sm text-destructive">{fieldErrors.description}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Category</Label>
+              <Select
+                value={categoryId}
+                onValueChange={(value) => {
+                  setCategoryId(value);
+                  setSubcategoryId("");
+                }}
+                disabled={isPending}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {fieldErrors.category_id && (
+                <p className="text-sm text-destructive">{fieldErrors.category_id}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Subcategory</Label>
+              <Select
+                value={subcategoryId}
+                onValueChange={setSubcategoryId}
+                disabled={isPending || !categoryId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select subcategory" />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredSubcategories.map((subcategory) => (
+                    <SelectItem key={subcategory.id} value={subcategory.id}>
+                      {subcategory.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {fieldErrors.subcategory_id && (
+                <p className="text-sm text-destructive">{fieldErrors.subcategory_id}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Priority</Label>
+              <Select value={priority} onValueChange={setPriority} disabled={isPending}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="critical">Critical</SelectItem>
+                </SelectContent>
+              </Select>
+              {fieldErrors.priority && (
+                <p className="text-sm text-destructive">{fieldErrors.priority}</p>
               )}
             </div>
 

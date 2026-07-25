@@ -122,7 +122,7 @@ export function LoginForm() {
 
           <p className="text-xs text-muted-foreground">
             Seed users: requester@example.com, agent@example.com,
-            approver@example.com (password: Password123!)
+            teamlead@example.com, approver@example.com (password: Password123!)
           </p>
         </form>
       </CardContent>

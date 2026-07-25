@@ -1,11 +1,23 @@
+import { NotificationBell } from "@/components/layout/notification-bell";
 import { signOut } from "@/lib/auth/actions";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { ROLE_LABELS } from "@/lib/auth/roles";
+import { canAccessAgentWorkspace } from "@/lib/auth/permissions";
+import {
+  countUnreadNotifications,
+  listNotificationsForUser,
+} from "@/lib/notifications/service";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 export async function AppHeader() {
   const profile = await getCurrentProfile();
+  const unread = profile
+    ? await countUnreadNotifications(profile.id)
+    : { count: 0 };
+  const notifications = profile
+    ? await listNotificationsForUser(profile.id, 15)
+    : { data: [] };
 
   return (
     <header className="border-b bg-background">
@@ -21,6 +33,22 @@ export async function AppHeader() {
             <Link href="/cases" className="text-muted-foreground hover:text-foreground">
               Cases
             </Link>
+            {profile && canAccessAgentWorkspace(profile.role) && (
+              <Link
+                href="/workspace"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Workspace
+              </Link>
+            )}
+            {profile && canAccessAgentWorkspace(profile.role) && (
+              <Link
+                href="/assignment-groups"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Assignment groups
+              </Link>
+            )}
             {profile?.role === "requester" && (
               <Link
                 href="/cases/new"
@@ -34,6 +62,10 @@ export async function AppHeader() {
 
         {profile && (
           <div className="flex items-center gap-3">
+            <NotificationBell
+              unreadCount={unread.count}
+              notifications={notifications.data}
+            />
             <div className="hidden text-right text-sm sm:block">
               <p className="font-medium">{profile.full_name}</p>
               <p className="text-muted-foreground">

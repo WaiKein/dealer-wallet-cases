@@ -16,6 +16,8 @@ import type { CaseStatus } from "@/types";
 const ALL_STATUSES: CaseStatus[] = [
   "SUBMITTED",
   "UNDER_REVIEW",
+  "WAITING_FOR_REQUESTER",
+  "WAITING_FOR_EXTERNAL_PARTY",
   "PENDING_APPROVAL",
   "APPROVED",
   "REJECTED",

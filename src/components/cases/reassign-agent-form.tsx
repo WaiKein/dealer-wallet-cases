@@ -2,8 +2,15 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { assignCaseToAgent } from "@/lib/cases/collaboration";
+import { reassignCaseAction } from "@/lib/cases/collaboration";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -13,25 +20,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 
-interface AssignAgentFormProps {
+interface ReassignAgentFormProps {
   caseId: string;
   currentAgentId: string | null;
   agents: { id: string; full_name: string; email: string }[];
 }
 
-export function AssignAgentForm({
+export function ReassignAgentForm({
   caseId,
   currentAgentId,
   agents,
-}: AssignAgentFormProps) {
+}: ReassignAgentFormProps) {
   const router = useRouter();
   const [agentId, setAgentId] = useState(currentAgentId ?? "");
   const [error, setError] = useState<string | null>(null);
@@ -39,28 +39,28 @@ export function AssignAgentForm({
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!agentId) {
-      setError("Select an agent.");
-      return;
-    }
+    setError(null);
 
     startTransition(async () => {
-      const result = await assignCaseToAgent({ caseId, agentId });
+      const result = await reassignCaseAction({ caseId, agentId });
       if (result.error) {
         setError(result.error);
         return;
       }
-      setError(null);
       router.refresh();
     });
+  }
+
+  if (agents.length === 0) {
+    return null;
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Assign agent</CardTitle>
+        <CardTitle>Reassign within group</CardTitle>
         <CardDescription>
-          Choose an operations agent to own this case.
+          Team leads can reassign this case to another group member.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -70,11 +70,10 @@ export function AssignAgentForm({
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-
           <div className="space-y-2">
-            <Label htmlFor="agent">Operations agent</Label>
-            <Select value={agentId} onValueChange={setAgentId}>
-              <SelectTrigger id="agent">
+            <Label>Agent</Label>
+            <Select value={agentId} onValueChange={setAgentId} disabled={isPending}>
+              <SelectTrigger>
                 <SelectValue placeholder="Select agent" />
               </SelectTrigger>
               <SelectContent>
@@ -86,9 +85,8 @@ export function AssignAgentForm({
               </SelectContent>
             </Select>
           </div>
-
           <Button type="submit" disabled={isPending || !agentId}>
-            {isPending ? "Assigning..." : "Assign agent"}
+            {isPending ? "Reassigning..." : "Reassign"}
           </Button>
         </form>
       </CardContent>
