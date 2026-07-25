@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const adjustmentTypes = ["credit", "debit"] as const;
+export const casePriorities = ["low", "medium", "high", "critical"] as const;
 
 export const createCaseSchema = z.object({
   title: z
@@ -27,6 +28,11 @@ export const createCaseSchema = z.object({
     required_error: "Select an adjustment type",
   }),
   currency: z.string().length(3, "Currency must be a 3-letter code").default("USD"),
+  category_id: z.string().uuid("Select a category"),
+  subcategory_id: z.string().uuid("Select a subcategory"),
+  priority: z.enum(casePriorities, {
+    required_error: "Select a priority",
+  }),
 });
 
 export type CreateCaseInput = z.infer<typeof createCaseSchema>;
@@ -36,6 +42,8 @@ export const statusTransitionSchema = z
     caseId: z.string().uuid("Invalid case ID"),
     nextStatus: z.enum([
       "UNDER_REVIEW",
+      "WAITING_FOR_REQUESTER",
+      "WAITING_FOR_EXTERNAL_PARTY",
       "PENDING_APPROVAL",
       "APPROVED",
       "REJECTED",
@@ -69,6 +77,8 @@ export const caseListFilterSchema = z.object({
     .enum([
       "SUBMITTED",
       "UNDER_REVIEW",
+      "WAITING_FOR_REQUESTER",
+      "WAITING_FOR_EXTERNAL_PARTY",
       "PENDING_APPROVAL",
       "APPROVED",
       "REJECTED",
@@ -80,12 +90,16 @@ export const caseListFilterSchema = z.object({
 
 export type CaseListFilterInput = z.infer<typeof caseListFilterSchema>;
 
-export const assignAgentSchema = z.object({
+export const reassignAgentSchema = z.object({
   caseId: z.string().uuid("Invalid case ID"),
   agentId: z.string().uuid("Select an agent"),
 });
 
-export type AssignAgentInput = z.infer<typeof assignAgentSchema>;
+export type ReassignAgentInput = z.infer<typeof reassignAgentSchema>;
+
+export const caseIdSchema = z.object({
+  caseId: z.string().uuid("Invalid case ID"),
+});
 
 export const addCommentSchema = z.object({
   caseId: z.string().uuid("Invalid case ID"),

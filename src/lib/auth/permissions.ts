@@ -11,18 +11,38 @@ export const STATUS_TRANSITIONS: StatusTransition[] = [
   {
     from: "SUBMITTED",
     to: "UNDER_REVIEW",
-    allowedRoles: ["operations_agent"],
+    allowedRoles: ["operations_agent", "team_lead"],
   },
   {
     from: "UNDER_REVIEW",
     to: "PENDING_APPROVAL",
-    allowedRoles: ["operations_agent"],
+    allowedRoles: ["operations_agent", "team_lead"],
   },
   {
     from: "UNDER_REVIEW",
     to: "REJECTED",
-    allowedRoles: ["operations_agent"],
+    allowedRoles: ["operations_agent", "team_lead"],
     requiresComment: true,
+  },
+  {
+    from: "UNDER_REVIEW",
+    to: "WAITING_FOR_REQUESTER",
+    allowedRoles: ["operations_agent", "team_lead"],
+  },
+  {
+    from: "UNDER_REVIEW",
+    to: "WAITING_FOR_EXTERNAL_PARTY",
+    allowedRoles: ["operations_agent", "team_lead"],
+  },
+  {
+    from: "WAITING_FOR_REQUESTER",
+    to: "UNDER_REVIEW",
+    allowedRoles: ["operations_agent", "team_lead", "requester"],
+  },
+  {
+    from: "WAITING_FOR_EXTERNAL_PARTY",
+    to: "UNDER_REVIEW",
+    allowedRoles: ["operations_agent", "team_lead"],
   },
   {
     from: "PENDING_APPROVAL",
@@ -38,7 +58,13 @@ export const STATUS_TRANSITIONS: StatusTransition[] = [
   {
     from: "APPROVED",
     to: "RESOLVED",
-    allowedRoles: ["operations_agent"],
+    allowedRoles: ["operations_agent", "team_lead"],
+  },
+  {
+    from: "RESOLVED",
+    to: "UNDER_REVIEW",
+    allowedRoles: ["operations_agent", "team_lead"],
+    requiresComment: true,
   },
 ];
 
@@ -73,13 +99,25 @@ export function canCreateCase(role: UserRole): boolean {
 }
 
 export function canViewAllCases(role: UserRole): boolean {
-  return role === "operations_agent" || role === "approver";
+  return (
+    role === "operations_agent" ||
+    role === "approver" ||
+    role === "team_lead"
+  );
 }
 
-export function canAssignAgent(role: UserRole, status: CaseStatus): boolean {
+export function canManageAssignmentGroups(role: UserRole): boolean {
+  return role === "team_lead" || role === "operations_agent" || role === "approver";
+}
+
+export function canAcknowledgeCase(
+  role: UserRole,
+  assignedAgentId: string | null,
+  userId: string
+): boolean {
   return (
-    role === "operations_agent" &&
-    (status === "SUBMITTED" || status === "UNDER_REVIEW")
+    (role === "operations_agent" || role === "team_lead") &&
+    (assignedAgentId === null || assignedAgentId === userId)
   );
 }
 
@@ -87,6 +125,15 @@ export function canCommentOnCase(role: UserRole): boolean {
   return (
     role === "requester" ||
     role === "operations_agent" ||
+    role === "approver" ||
+    role === "team_lead"
+  );
+}
+
+export function canAccessAgentWorkspace(role: UserRole): boolean {
+  return (
+    role === "operations_agent" ||
+    role === "team_lead" ||
     role === "approver"
   );
 }

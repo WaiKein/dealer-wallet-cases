@@ -18,3 +18,13 @@ export function formatDateTime(value: string): string {
     timeStyle: "short",
   }).format(new Date(value));
 }
+
+export function formatCaseAge(createdAt: string, now = new Date()): string {
+  const ms = Math.max(0, now.getTime() - new Date(createdAt).getTime());
+  const hours = Math.floor(ms / 3_600_000);
+  if (hours < 24) {
+    return `${hours}h`;
+  }
+  const days = Math.floor(hours / 24);
+  return `${days}d ${hours % 24}h`;
+}
