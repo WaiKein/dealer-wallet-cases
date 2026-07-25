@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { transitionCaseStatus } from "@/lib/cases/actions";
 import { getAvailableTransitions } from "@/lib/auth/permissions";
@@ -29,7 +29,7 @@ export function StatusActionButtons({
   const [rejectionReason, setRejectionReason] = useState("");
   const [resolutionNotes, setResolutionNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
 
   if (transitions.length === 0) {
     return null;
@@ -44,12 +44,15 @@ export function StatusActionButtons({
     setError(null);
   }
 
-  function handleSubmit() {
-    if (!selectedStatus) {
+  async function handleSubmit() {
+    if (!selectedStatus || isPending) {
       return;
     }
 
-    startTransition(async () => {
+    setIsPending(true);
+    setError(null);
+
+    try {
       const result = await transitionCaseStatus({
         caseId,
         nextStatus: selectedStatus as Extract<
@@ -77,7 +80,9 @@ export function StatusActionButtons({
       setRejectionReason("");
       setResolutionNotes("");
       router.refresh();
-    });
+    } finally {
+      setIsPending(false);
+    }
   }
 
   return (

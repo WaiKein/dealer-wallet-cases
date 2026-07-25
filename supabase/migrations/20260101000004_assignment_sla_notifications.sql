@@ -419,7 +419,27 @@ CREATE POLICY "Authenticated insert notifications in org"
 
 CREATE POLICY "Users view accessible cases"
   ON public.cases FOR SELECT
-  USING (public.can_access_case(id));
+  USING (
+    organization_id = public.get_my_org_id()
+    AND (
+      requester_id = auth.uid()
+      OR (
+        public.get_my_role() IN ('operations_agent', 'team_lead')
+        AND (
+          assigned_group_id IS NULL
+          OR public.is_group_member(assigned_group_id)
+        )
+      )
+      OR (
+        public.get_my_role() = 'approver'
+        AND (
+          status = 'PENDING_APPROVAL'
+          OR approver_id = auth.uid()
+        )
+      )
+      OR assigned_agent_id = auth.uid()
+    )
+  );
 
 CREATE POLICY "Requesters create cases"
   ON public.cases FOR INSERT
