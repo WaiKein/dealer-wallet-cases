@@ -15,6 +15,9 @@ describe("createCaseSchema", () => {
       adjustment_amount: 1250,
       adjustment_type: "debit",
       currency: "USD",
+      category_id: "c1000000-0000-0000-0000-000000000001",
+      subcategory_id: "c2000000-0000-0000-0000-000000000001",
+      priority: "medium",
     });
 
     expect(result.success).toBe(true);
@@ -29,6 +32,9 @@ describe("createCaseSchema", () => {
       adjustment_amount: 0,
       adjustment_type: "credit",
       currency: "USD",
+      category_id: "c1000000-0000-0000-0000-000000000001",
+      subcategory_id: "c2000000-0000-0000-0000-000000000001",
+      priority: "low",
     });
 
     expect(result.success).toBe(false);

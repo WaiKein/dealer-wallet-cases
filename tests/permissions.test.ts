@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  canAssignAgent,
   canCreateCase,
   canTransition,
   canViewAllCases,
@@ -14,17 +13,11 @@ describe("role permissions", () => {
     expect(canCreateCase("approver")).toBe(false);
   });
 
-  it("allows agents and approvers to view all cases", () => {
+  it("allows agents, leads, and approvers to view org case queues", () => {
     expect(canViewAllCases("requester")).toBe(false);
     expect(canViewAllCases("operations_agent")).toBe(true);
+    expect(canViewAllCases("team_lead")).toBe(true);
     expect(canViewAllCases("approver")).toBe(true);
-  });
-
-  it("allows agents to assign during early workflow statuses", () => {
-    expect(canAssignAgent("operations_agent", "SUBMITTED")).toBe(true);
-    expect(canAssignAgent("operations_agent", "UNDER_REVIEW")).toBe(true);
-    expect(canAssignAgent("operations_agent", "PENDING_APPROVAL")).toBe(false);
-    expect(canAssignAgent("approver", "SUBMITTED")).toBe(false);
   });
 });
 
@@ -43,8 +36,11 @@ describe("status transitions", () => {
     expect(transitions.map((item) => item.to)).toEqual(["APPROVED", "REJECTED"]);
   });
 
-  it("blocks requester from changing status", () => {
+  it("blocks requester from changing status except leaving wait", () => {
     expect(canTransition("SUBMITTED", "UNDER_REVIEW", "requester")).toBeNull();
+    expect(
+      canTransition("WAITING_FOR_REQUESTER", "UNDER_REVIEW", "requester")?.to
+    ).toBe("UNDER_REVIEW");
   });
 
   it("allows agent to resolve approved cases", () => {
