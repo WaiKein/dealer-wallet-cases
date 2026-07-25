@@ -2,16 +2,23 @@
 
 import { revalidatePath } from "next/cache";
 import {
-  canAssignAgent,
-  canCommentOnCase,
-} from "@/lib/auth/permissions";
+  acknowledgeCase,
+  claimCase,
+  reassignWithinGroup,
+} from "@/lib/assignment/service";
+import { canCommentOnCase } from "@/lib/auth/permissions";
 import { getCurrentProfile } from "@/lib/auth/session";
+import {
+  markAllNotificationsRead,
+  markNotificationRead,
+} from "@/lib/notifications/service";
 import { createClient } from "@/lib/supabase/server";
 import {
   addCommentSchema,
-  assignAgentSchema,
+  caseIdSchema,
+  reassignAgentSchema,
   type AddCommentInput,
-  type AssignAgentInput,
+  type ReassignAgentInput,
 } from "@/lib/validations/case";
 import type { ActionResult } from "@/types";
 
@@ -26,69 +33,118 @@ const ALLOWED_MIME_TYPES = new Set([
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ]);
 
-export async function assignCaseToAgent(
-  input: AssignAgentInput
+export async function claimCaseAction(
+  input: { caseId: string }
 ): Promise<ActionResult> {
   const profile = await getCurrentProfile();
   if (!profile) {
     return { success: false, error: "You must be signed in." };
   }
 
-  const parsed = assignAgentSchema.safeParse(input);
+  const parsed = caseIdSchema.safeParse(input);
   if (!parsed.success) {
-    return {
-      success: false,
-      error: parsed.error.issues[0]?.message ?? "Invalid assignment data.",
-    };
+    return { success: false, error: "Invalid case ID." };
   }
 
-  const supabase = await createClient();
-  const { data: existingCase, error: fetchError } = await supabase
-    .from("cases")
-    .select("id, status, assigned_agent_id")
-    .eq("id", parsed.data.caseId)
-    .single();
-
-  if (fetchError || !existingCase) {
-    return { success: false, error: "Case not found." };
+  const result = await claimCase({ caseId: parsed.data.caseId, actor: profile });
+  if (result.error) {
+    return { success: false, error: result.error };
   }
-
-  if (!canAssignAgent(profile.role, existingCase.status)) {
-    return {
-      success: false,
-      error: "You cannot assign an agent for this case right now.",
-    };
-  }
-
-  const { data: agent, error: agentError } = await supabase
-    .from("profiles")
-    .select("id, full_name, role")
-    .eq("id", parsed.data.agentId)
-    .eq("role", "operations_agent")
-    .single();
-
-  if (agentError || !agent) {
-    return { success: false, error: "Selected user is not an operations agent." };
-  }
-
-  const { error: updateError } = await supabase
-    .from("cases")
-    .update({ assigned_agent_id: agent.id })
-    .eq("id", parsed.data.caseId);
-
-  if (updateError) {
-    return { success: false, error: updateError.message };
-  }
-
-  await supabase.from("case_comments").insert({
-    case_id: parsed.data.caseId,
-    author_id: profile.id,
-    body: `Assigned to ${agent.full_name}.`,
-  });
 
   revalidatePath("/cases");
   revalidatePath(`/cases/${parsed.data.caseId}`);
-  revalidatePath("/dashboard");
+  revalidatePath("/workspace");
+  return { success: true };
+}
+
+export async function acknowledgeCaseAction(
+  input: { caseId: string }
+): Promise<ActionResult> {
+  const profile = await getCurrentProfile();
+  if (!profile) {
+    return { success: false, error: "You must be signed in." };
+  }
+
+  const parsed = caseIdSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: "Invalid case ID." };
+  }
+
+  const result = await acknowledgeCase({
+    caseId: parsed.data.caseId,
+    actor: profile,
+  });
+  if (result.error) {
+    return { success: false, error: result.error };
+  }
+
+  revalidatePath("/cases");
+  revalidatePath(`/cases/${parsed.data.caseId}`);
+  revalidatePath("/workspace");
+  return { success: true };
+}
+
+export async function reassignCaseAction(
+  input: ReassignAgentInput
+): Promise<ActionResult> {
+  const profile = await getCurrentProfile();
+  if (!profile) {
+    return { success: false, error: "You must be signed in." };
+  }
+
+  const parsed = reassignAgentSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid reassignment data.",
+    };
+  }
+
+  const result = await reassignWithinGroup({
+    caseId: parsed.data.caseId,
+    agentId: parsed.data.agentId,
+    actor: profile,
+  });
+
+  if (result.error) {
+    return { success: false, error: result.error };
+  }
+
+  revalidatePath("/cases");
+  revalidatePath(`/cases/${parsed.data.caseId}`);
+  revalidatePath("/workspace");
+  return { success: true };
+}
+
+export async function markNotificationReadAction(
+  notificationId: string
+): Promise<ActionResult> {
+  const profile = await getCurrentProfile();
+  if (!profile) {
+    return { success: false, error: "You must be signed in." };
+  }
+
+  const error = await markNotificationRead(profile.id, notificationId);
+  if (error) {
+    return { success: false, error };
+  }
+
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
+export async function markAllNotificationsReadAction(): Promise<ActionResult> {
+  const profile = await getCurrentProfile();
+  if (!profile) {
+    return { success: false, error: "You must be signed in." };
+  }
+
+  const error = await markAllNotificationsRead(profile.id);
+  if (error) {
+    return { success: false, error };
+  }
+
+  revalidatePath("/", "layout");
   return { success: true };
 }
 
