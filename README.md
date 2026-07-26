@@ -127,6 +127,9 @@ npm run simulate:sla
 npm run simulate:all
 ```
 
+With test-control enabled locally, open `/simulator` (Simulator in the header)
+to run scenarios and browse the latest results in the UI.
+
 See `tools/case-simulator/README.md` for details.
 
 ## Implementation notes

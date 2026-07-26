@@ -27,6 +27,18 @@ npm run simulate:all
 
 Reports are written to `tools/case-simulator/reports/` (console + JSON + JUnit).
 
+## UI
+
+With the Next.js app running and test-control enabled, open **Simulator** in the
+header (or go to `/simulator`) while signed in. From there you can:
+
+- Browse scenarios and filter by tag
+- Run all / by tag / a single scenario
+- Inspect the latest pass/fail steps, timings, and console output
+
+The UI is disabled when `ENABLE_TEST_CONTROL` is not `true` or `NODE_ENV` is
+`production`.
+
 ## Notes
 
 - Business actions use each actor's bearer token against `/api/v1/*`.

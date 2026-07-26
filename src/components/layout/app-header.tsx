@@ -3,6 +3,7 @@ import { signOut } from "@/lib/auth/actions";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 import { canAccessAgentWorkspace } from "@/lib/auth/permissions";
+import { isTestControlEnabled } from "@/lib/clock";
 import {
   countUnreadNotifications,
   listNotificationsForUser,
@@ -55,6 +56,14 @@ export async function AppHeader() {
                 className="text-muted-foreground hover:text-foreground"
               >
                 New Case
+              </Link>
+            )}
+            {isTestControlEnabled() && (
+              <Link
+                href="/simulator"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Simulator
               </Link>
             )}
           </nav>
