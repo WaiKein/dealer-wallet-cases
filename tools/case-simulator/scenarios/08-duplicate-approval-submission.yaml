@@ -1,0 +1,45 @@
+name: Duplicate approval submission
+tags: [workflow, security]
+actors:
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+  - id: approver
+    email: approver@example.com
+    password: Password123!
+actions:
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-dup-approve] Duplicate approval"
+      categoryCode: wallet
+      subcategoryCode: duplicate_credit
+  - actor: agent
+    action: claim_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: acknowledge_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: start_review
+    params: { caseId: $caseId }
+  - actor: agent
+    action: request_approval
+    params: { caseId: $caseId }
+  - actor: approver
+    action: approve_case
+    params: { caseId: $caseId }
+  - actor: approver
+    action: approve_case
+    params: { caseId: $caseId }
+    expectError: true
+assertions:
+  - type: case_status
+    actor: approver
+    params: { caseId: $caseId, status: APPROVED }
+cleanup:
+  caseTitlePrefix: "[sim-dup-approve]"

@@ -7,6 +7,7 @@ import {
   slaTypeLabel,
 } from "@/lib/assignment/rules";
 import { recordAuditEntry } from "@/lib/cases/audit";
+import { getClock } from "@/lib/clock";
 import { notifyUsers } from "@/lib/notifications/service";
 import { createClient } from "@/lib/supabase/server";
 import type {
@@ -110,7 +111,7 @@ export async function refreshCaseSlaStates(params: {
     .select("*")
     .eq("case_id", params.caseId);
 
-  const now = new Date();
+  const now = getClock().now();
 
   for (const record of (records ?? []) as CaseSla[]) {
     if (record.state === "COMPLETED" || record.state === "PAUSED") {
@@ -221,7 +222,7 @@ export async function completeSla(params: {
   now?: Date;
 }): Promise<string | null> {
   const supabase = await createClient();
-  const now = params.now ?? new Date();
+  const now = params.now ?? getClock().now();
 
   const { data: record } = await supabase
     .from("case_sla")
@@ -271,7 +272,7 @@ export async function syncResolutionSlaForStatus(params: {
   actorId: string;
 }): Promise<string | null> {
   const supabase = await createClient();
-  const now = new Date();
+  const now = getClock().now();
 
   const { data: record } = await supabase
     .from("case_sla")

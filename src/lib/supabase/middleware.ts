@@ -31,7 +31,9 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const isAuthRoute = pathname.startsWith("/login");
-  const isPublicRoute = isAuthRoute || pathname.startsWith("/auth");
+  const isApiRoute = pathname.startsWith("/api/");
+  const isPublicRoute =
+    isAuthRoute || pathname.startsWith("/auth") || isApiRoute;
 
   let activeUser = user;
 

@@ -1,0 +1,39 @@
+name: First-response SLA breach
+tags: [sla]
+actors:
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+actions:
+  - actor: requester
+    action: reset_clock
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-sla-fr] First response breach"
+      categoryCode: wallet
+      subcategoryCode: duplicate_credit
+      priority: critical
+  - actor: agent
+    action: advance_time
+    params:
+      ms: 7200000
+  - actor: agent
+    action: run_sla_processor
+    params: { caseId: $caseId }
+assertions:
+  - type: sla_state
+    actor: agent
+    params: { caseId: $caseId, slaType: first_response, state: BREACHED }
+  - type: notification_existence
+    actor: agent
+    params: { type: sla_breach, caseId: $caseId }
+  - type: audit_event_existence
+    actor: agent
+    params: { caseId: $caseId, eventType: sla_breach }
+cleanup:
+  caseTitlePrefix: "[sim-sla-fr]"

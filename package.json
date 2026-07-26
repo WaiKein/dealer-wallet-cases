@@ -11,7 +11,13 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "db:reset": "supabase db reset"
+    "db:reset": "supabase db reset",
+    "simulate": "tsx tools/case-simulator/src/cli.ts",
+    "simulate:smoke": "tsx tools/case-simulator/src/cli.ts --tags=smoke",
+    "simulate:workflow": "tsx tools/case-simulator/src/cli.ts --tags=workflow",
+    "simulate:security": "tsx tools/case-simulator/src/cli.ts --tags=security",
+    "simulate:sla": "tsx tools/case-simulator/src/cli.ts --tags=sla",
+    "simulate:all": "tsx tools/case-simulator/src/cli.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -41,6 +47,8 @@
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.8",
+    "tsx": "^4.19.2",
+    "yaml": "^2.7.0"
   }
 }

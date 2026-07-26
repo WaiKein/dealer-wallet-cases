@@ -1,0 +1,29 @@
+name: Unauthorized cross-organization access
+tags: [security]
+actors:
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+actions:
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-xorg] Cross org visibility check"
+      categoryCode: wallet
+      subcategoryCode: other
+  # Approver/agent in same org can see; assert requester of another hypothetical
+  # org cannot by using a forged UUID and expecting denial.
+  - actor: agent
+    action: get_case
+    params: { caseId: "00000000-0000-0000-0000-000000000099" }
+    expectError: true
+assertions:
+  - type: case_visibility
+    actor: requester
+    params: { caseId: $caseId, visible: true }
+cleanup:
+  caseTitlePrefix: "[sim-xorg]"

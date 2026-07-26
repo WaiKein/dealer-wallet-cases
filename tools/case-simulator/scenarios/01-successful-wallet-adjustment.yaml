@@ -1,0 +1,67 @@
+name: Successful wallet adjustment
+description: End-to-end happy path through approval and resolution
+tags: [workflow, smoke]
+actors:
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+  - id: approver
+    email: approver@example.com
+    password: Password123!
+setup:
+  titlePrefix: "[sim-success]"
+actions:
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-success] Wallet adjustment happy path"
+      categoryCode: wallet
+      subcategoryCode: duplicate_credit
+      priority: medium
+  - actor: agent
+    action: claim_case
+    params:
+      caseId: $caseId
+  - actor: agent
+    action: acknowledge_case
+    params:
+      caseId: $caseId
+  - actor: agent
+    action: start_review
+    params:
+      caseId: $caseId
+  - actor: agent
+    action: request_approval
+    params:
+      caseId: $caseId
+  - actor: approver
+    action: approve_case
+    params:
+      caseId: $caseId
+  - actor: agent
+    action: resolve_case
+    params:
+      caseId: $caseId
+assertions:
+  - type: case_status
+    actor: agent
+    params:
+      caseId: $caseId
+      status: RESOLVED
+  - type: notification_existence
+    actor: requester
+    params:
+      type: case_resolution
+      caseId: $caseId
+  - type: audit_event_existence
+    actor: agent
+    params:
+      caseId: $caseId
+      eventType: status_change
+      toStatus: RESOLVED
+cleanup:
+  caseTitlePrefix: "[sim-success]"

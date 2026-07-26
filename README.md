@@ -114,17 +114,20 @@ All seed users share the password `Password123!`
 | teamlead@example.com | Team Lead |
 | approver@example.com | Approver |
 
-## Scripts
+## Case simulator
+
+API-driven workflow simulator lives in `tools/case-simulator`.
 
 ```bash
-npm run dev        # Start development server
-npm run build      # Production build
-npm run typecheck  # TypeScript check
-npm run lint       # ESLint
-npm run test       # Vitest unit tests
-npm run test:e2e   # Playwright e2e tests
-npm run db:reset   # Reset local DB + migrations/seed
+# App must be running with ENABLE_TEST_CONTROL=true
+npm run simulate:smoke
+npm run simulate:workflow
+npm run simulate:security
+npm run simulate:sla
+npm run simulate:all
 ```
+
+See `tools/case-simulator/README.md` for details.
 
 ## Implementation notes
 

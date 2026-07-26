@@ -1,0 +1,46 @@
+name: Approval rejection
+tags: [workflow]
+actors:
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+  - id: approver
+    email: approver@example.com
+    password: Password123!
+actions:
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-reject] Approval rejection path"
+      categoryCode: wallet
+      subcategoryCode: duplicate_credit
+  - actor: agent
+    action: claim_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: acknowledge_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: start_review
+    params: { caseId: $caseId }
+  - actor: agent
+    action: request_approval
+    params: { caseId: $caseId }
+  - actor: approver
+    action: reject_case
+    params:
+      caseId: $caseId
+      rejection_reason: Policy limits exceeded
+assertions:
+  - type: case_status
+    actor: approver
+    params: { caseId: $caseId, status: REJECTED }
+  - type: notification_existence
+    actor: requester
+    params: { type: approval_decision, caseId: $caseId }
+cleanup:
+  caseTitlePrefix: "[sim-reject]"

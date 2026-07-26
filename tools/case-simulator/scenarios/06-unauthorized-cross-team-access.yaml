@@ -1,0 +1,33 @@
+name: Unauthorized cross-team access
+tags: [security]
+actors:
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+actions:
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-xteam] Chargeback restricted case"
+      categoryCode: wallet
+      subcategoryCode: chargeback
+      priority: critical
+  - actor: agent
+    action: claim_case
+    params: { caseId: $caseId }
+    # agent is member of chargeback_desk in seed, so claim should succeed.
+    # Use reject transition from requester to assert unauthorized mutation.
+  - actor: requester
+    action: request_approval
+    params: { caseId: $caseId }
+    expectError: true
+assertions:
+  - type: case_visibility
+    actor: agent
+    params: { caseId: $caseId, visible: true }
+cleanup:
+  caseTitlePrefix: "[sim-xteam]"

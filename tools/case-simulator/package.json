@@ -1,0 +1,8 @@
+{
+  "name": "@dealer-wallet/case-simulator",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "simulate": "tsx src/cli.ts"
+  }
+}

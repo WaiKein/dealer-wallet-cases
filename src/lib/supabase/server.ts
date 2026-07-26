@@ -1,7 +1,13 @@
 import { createServerClient, type SetAllCookies } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { getRequestSupabaseClient } from "@/lib/supabase/context";
 
 export async function createClient() {
+  const contextual = getRequestSupabaseClient();
+  if (contextual) {
+    return contextual;
+  }
+
   const cookieStore = await cookies();
 
   return createServerClient(

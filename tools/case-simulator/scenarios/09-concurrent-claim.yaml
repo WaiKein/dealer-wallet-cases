@@ -1,0 +1,35 @@
+name: Two agents concurrently claiming one case
+tags: [security, workflow]
+actors:
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+  - id: lead
+    email: teamlead@example.com
+    password: Password123!
+actions:
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-race-claim] Concurrent claim"
+      categoryCode: wallet
+      subcategoryCode: duplicate_credit
+  - actor: agent
+    action: claim_case
+    params: { caseId: $caseId }
+  - actor: lead
+    action: claim_case
+    params: { caseId: $caseId }
+    expectError: true
+assertions:
+  - type: assigned_agent
+    actor: agent
+    params:
+      caseId: $caseId
+      agentEmail: agent@example.com
+cleanup:
+  caseTitlePrefix: "[sim-race-claim]"

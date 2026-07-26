@@ -1,0 +1,44 @@
+name: Requester information required
+tags: [workflow]
+actors:
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+actions:
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-info] Need requester information"
+      categoryCode: wallet
+      subcategoryCode: missing_promo
+  - actor: agent
+    action: claim_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: acknowledge_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: start_review
+    params: { caseId: $caseId }
+  - actor: agent
+    action: request_information
+    params: { caseId: $caseId }
+  - actor: requester
+    action: submit_information
+    params: { caseId: $caseId }
+assertions:
+  - type: case_status
+    actor: agent
+    params: { caseId: $caseId, status: UNDER_REVIEW }
+  - type: sla_state
+    actor: agent
+    params: { caseId: $caseId, slaType: resolution, state: RUNNING }
+  - type: audit_event_existence
+    actor: agent
+    params: { caseId: $caseId, eventType: sla_paused }
+cleanup:
+  caseTitlePrefix: "[sim-info]"

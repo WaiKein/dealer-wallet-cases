@@ -4,6 +4,7 @@ import {
   matchAssignmentRule,
 } from "@/lib/assignment/rules";
 import { recordAuditEntry } from "@/lib/cases/audit";
+import { getClock } from "@/lib/clock";
 import { notifyUsers } from "@/lib/notifications/service";
 import { createClient } from "@/lib/supabase/server";
 import type {
@@ -356,7 +357,7 @@ export async function acknowledgeCase(params: {
     return { error: null };
   }
 
-  const now = new Date().toISOString();
+  const now = getClock().now().toISOString();
   const { error: updateError } = await supabase
     .from("cases")
     .update({

@@ -14,6 +14,7 @@
 /playwright-report
 /blob-report
 /playwright/.cache
+/tools/case-simulator/reports
 
 # next.js
 /.next/

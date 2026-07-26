@@ -1,0 +1,53 @@
+name: Reopen resolved case
+tags: [workflow]
+actors:
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+  - id: approver
+    email: approver@example.com
+    password: Password123!
+actions:
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-reopen] Reopen resolved case"
+      categoryCode: settlement
+      subcategoryCode: fee_correction
+  - actor: agent
+    action: claim_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: acknowledge_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: start_review
+    params: { caseId: $caseId }
+  - actor: agent
+    action: request_approval
+    params: { caseId: $caseId }
+  - actor: approver
+    action: approve_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: resolve_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: reopen_case
+    params: { caseId: $caseId }
+assertions:
+  - type: case_status
+    actor: agent
+    params: { caseId: $caseId, status: UNDER_REVIEW }
+  - type: notification_existence
+    actor: requester
+    params: { type: case_reopening, caseId: $caseId }
+  - type: audit_event_existence
+    actor: agent
+    params: { caseId: $caseId, eventType: case_reopened }
+cleanup:
+  caseTitlePrefix: "[sim-reopen]"
