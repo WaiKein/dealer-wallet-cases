@@ -15,7 +15,7 @@ import type { ActionResult, Profile } from "@/types";
 export async function createCaseRecord(
   profile: Profile,
   input: CreateCaseInput
-): Promise<ActionResult<{ id: string; case_number?: string }>> {
+): Promise<ActionResult<{ id: string; case_number?: string; version?: number }>> {
   if (!canCreateCase(profile.role)) {
     return { success: false, error: "Only requesters can create cases." };
   }
@@ -72,7 +72,7 @@ export async function createCaseRecord(
       created_at: startedAt.toISOString(),
       updated_at: startedAt.toISOString(),
     })
-    .select("id, status, created_at, case_number")
+    .select("id, status, created_at, case_number, version")
     .single();
 
   if (error || !data) {
@@ -119,6 +119,10 @@ export async function createCaseRecord(
 
   return {
     success: true,
-    data: { id: data.id, case_number: data.case_number },
+    data: {
+      id: data.id,
+      case_number: data.case_number,
+      version: Number(data.version ?? 1),
+    },
   };
 }

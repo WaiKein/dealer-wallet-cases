@@ -18,10 +18,13 @@ export class ApiClient {
     status: number;
     data: T;
     correlationId?: string;
+    errorMessage?: string;
+    errorCode?: string;
     raw: unknown;
   }> {
     const headers: Record<string, string> = {
       "content-type": "application/json",
+      "x-correlation-id": crypto.randomUUID(),
       ...extraHeaders,
     };
     if (this.accessToken) {
@@ -38,15 +41,25 @@ export class ApiClient {
     const payload = raw as {
       success?: boolean;
       data?: T;
-      error?: string;
+      error?: string | { code?: string; message?: string };
       correlationId?: string;
     };
+
+    const errorMessage =
+      typeof payload.error === "string"
+        ? payload.error
+        : payload.error?.message;
+    const errorCode =
+      typeof payload.error === "object" ? payload.error?.code : undefined;
 
     return {
       ok: response.ok && payload.success !== false,
       status: response.status,
       data: (payload.data ?? raw) as T,
-      correlationId: payload.correlationId,
+      correlationId:
+        payload.correlationId ?? response.headers.get("x-correlation-id") ?? undefined,
+      errorMessage,
+      errorCode,
       raw,
     };
   }

@@ -17,7 +17,9 @@
     "simulate:workflow": "tsx tools/case-simulator/src/cli.ts --tags=workflow",
     "simulate:security": "tsx tools/case-simulator/src/cli.ts --tags=security",
     "simulate:sla": "tsx tools/case-simulator/src/cli.ts --tags=sla",
-    "simulate:all": "tsx tools/case-simulator/src/cli.ts"
+    "simulate:reliability": "tsx tools/case-simulator/src/cli.ts --tags=reliability",
+    "simulate:all": "tsx tools/case-simulator/src/cli.ts",
+    "jobs:worker": "tsx scripts/jobs-worker.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

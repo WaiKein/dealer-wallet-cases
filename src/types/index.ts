@@ -166,6 +166,7 @@ export interface CaseRecord {
   resolution_notes: string | null;
   acknowledged_at: string | null;
   first_responded_at: string | null;
+  version: number;
   created_at: string;
   updated_at: string;
 }
@@ -234,4 +235,7 @@ export interface ActionResult<T = void> {
   success: boolean;
   data?: T;
   error?: string;
+  code?: string;
+  details?: Record<string, unknown>;
+  correlationId?: string;
 }

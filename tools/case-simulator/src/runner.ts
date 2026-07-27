@@ -41,17 +41,44 @@ export async function runScenario(params: {
       });
       steps.push(step);
       if (step.ok && action.saveAs && step.actual) {
-        const saved = step.actual as { id?: string };
-        vars[action.saveAs] = saved.id ?? step.actual;
+        const saved = step.actual as { id?: string; version?: number; jobId?: string };
+        vars[action.saveAs] = saved.id ?? saved.jobId ?? step.actual;
         if (saved.id) {
           createdCaseIds.push(saved.id);
-          vars.caseId = saved.id;
+          if (action.saveAs === "caseId" || vars.caseId == null) {
+            vars.caseId = saved.id;
+          }
+        }
+        if (saved.jobId) {
+          vars.jobId = saved.jobId;
+        }
+        if (typeof saved.version === "number") {
+          vars.caseVersion = saved.version;
+        }
+      }
+      if (
+        step.ok &&
+        typeof step.actual === "object" &&
+        step.actual &&
+        "version" in (step.actual as object)
+      ) {
+        const version = (step.actual as { version?: number }).version;
+        if (typeof version === "number") {
+          vars.caseVersion = version;
         }
       }
       if (!step.ok) {
         break;
       }
     }
+
+    // Drain background jobs so notification/SLA assertions see side effects.
+    await baseClient.request(
+      "POST",
+      "/api/jobs/tick",
+      { limit: 50, workerId: `sim-${vars.runId}` },
+      { "x-jobs-tick-secret": params.testControlSecret }
+    );
 
     for (const [index, assertion] of (params.scenario.assertions ?? []).entries()) {
       const started = Date.now();
@@ -161,9 +188,10 @@ async function executeActionStep(params: {
       correlationId: result.correlationId,
       error: ok
         ? undefined
-        : typeof result.raw === "object" && result.raw && "error" in result.raw
-          ? String((result.raw as { error: string }).error)
-          : `HTTP ${result.status}`,
+        : result.errorMessage ??
+          (typeof result.raw === "object" && result.raw && "error" in result.raw
+            ? JSON.stringify((result.raw as { error: unknown }).error)
+            : `HTTP ${result.status}`),
       durationMs: Date.now() - started,
     };
   } catch (error) {

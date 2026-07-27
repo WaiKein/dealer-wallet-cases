@@ -1,0 +1,28 @@
+name: Failed job retry
+tags: [reliability, jobs]
+actors:
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+actions:
+  - actor: agent
+    action: enqueue_test_job
+    saveAs: jobId
+    params:
+      jobType: jobs.fail_once
+      maxAttempts: 3
+      payload: { succeedAfterAttempt: 3 }
+      idempotencyKey: sim-job-retry-1
+  - actor: agent
+    action: drain_jobs
+    params: { limit: 10 }
+  - actor: agent
+    action: drain_jobs
+    params: { limit: 10 }
+  - actor: agent
+    action: drain_jobs
+    params: { limit: 10 }
+assertions:
+  - type: job_status
+    actor: agent
+    params: { jobId: $jobId, status: succeeded, minAttempts: 3 }

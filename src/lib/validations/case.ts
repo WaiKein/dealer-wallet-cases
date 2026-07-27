@@ -56,6 +56,8 @@ export const statusTransitionSchema = z
     comment: z.string().max(1000, "Comment is too long").optional(),
     rejection_reason: z.string().max(1000, "Reason is too long").optional(),
     resolution_notes: z.string().max(1000, "Notes are too long").optional(),
+    /** Optimistic lock; when set, must match cases.version. */
+    expectedVersion: z.coerce.number().int().positive().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.nextStatus === "REJECTED" && !data.rejection_reason?.trim()) {

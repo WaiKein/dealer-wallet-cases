@@ -1,0 +1,12 @@
+-- Rollback for 20260101000008_reliability_pilot (apply manually if needed)
+-- DROP POLICY IF EXISTS "Users view org job attempts" ON public.background_job_attempts;
+-- DROP POLICY IF EXISTS "Users view org jobs" ON public.background_jobs;
+-- DROP POLICY IF EXISTS "Users view org idempotency" ON public.idempotency_keys;
+-- DROP FUNCTION IF EXISTS public.claim_background_jobs(INTEGER, TEXT);
+-- DROP TABLE IF EXISTS public.background_job_attempts;
+-- DROP TABLE IF EXISTS public.background_jobs;
+-- DROP TABLE IF EXISTS public.idempotency_keys;
+-- DROP TYPE IF EXISTS public.job_status;
+-- ALTER TABLE public.notifications DROP COLUMN IF EXISTS correlation_id;
+-- ALTER TABLE public.case_audit_history DROP COLUMN IF EXISTS correlation_id;
+-- ALTER TABLE public.cases DROP COLUMN IF EXISTS version;

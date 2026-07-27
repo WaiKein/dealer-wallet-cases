@@ -2,6 +2,7 @@ import {
   buildNotificationDedupeKey,
   canReceiveNotificationType,
 } from "@/lib/notifications/dedupe";
+import { getCorrelationId } from "@/lib/observability/correlation";
 import { createClient } from "@/lib/supabase/server";
 import type { NotificationType, UserRole } from "@/types";
 
@@ -27,6 +28,7 @@ export async function createNotification(params: {
   });
 
   const supabase = await createClient();
+  const correlationId = getCorrelationId();
   const { error } = await supabase.from("notifications").insert({
     organization_id: params.organizationId,
     user_id: params.userId,
@@ -35,6 +37,7 @@ export async function createNotification(params: {
     title: params.title,
     body: params.body,
     dedupe_key: dedupeKey,
+    correlation_id: correlationId,
   });
 
   if (error) {
@@ -56,19 +59,29 @@ export async function notifyUsers(params: {
   title: string;
   body: string;
   suffix?: string;
+  /** When true, insert inline (job worker). Default enqueues a background job. */
+  inline?: boolean;
 }): Promise<void> {
-  for (const recipient of params.recipients) {
-    await createNotification({
-      organizationId: params.organizationId,
-      userId: recipient.id,
-      userRole: recipient.role,
-      caseId: params.caseId,
-      type: params.type,
-      title: params.title,
-      body: params.body,
-      suffix: params.suffix,
-    });
+  if (params.inline) {
+    for (const recipient of params.recipients) {
+      await createNotification({
+        organizationId: params.organizationId,
+        userId: recipient.id,
+        userRole: recipient.role,
+        caseId: params.caseId,
+        type: params.type,
+        title: params.title,
+        body: params.body,
+        suffix: params.suffix,
+      });
+    }
+    return;
   }
+
+  const { enqueueNotificationDispatch } = await import(
+    "@/lib/jobs/domain-enqueue"
+  );
+  await enqueueNotificationDispatch(params);
 }
 
 export async function listNotificationsForUser(userId: string, limit = 20) {

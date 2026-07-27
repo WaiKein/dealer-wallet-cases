@@ -1,0 +1,139 @@
+import { createServiceClient } from "@/lib/supabase/api";
+import { runWithSupabaseClient } from "@/lib/supabase/context";
+import { runWithCorrelationId } from "@/lib/observability/correlation";
+import { backoffMs, type BackgroundJob } from "@/lib/jobs/enqueue";
+import { handleSlaRefreshJob } from "@/lib/jobs/handlers/sla-refresh";
+import { handleNotificationDispatchJob } from "@/lib/jobs/handlers/notification-dispatch";
+import { handleFailOnceJob } from "@/lib/jobs/handlers/fail-once";
+
+/**
+ * System job handlers (documented auth bypass):
+ * - sla.refresh_case: evaluates SLA state for a case; org-scoped payload
+ * - notification.dispatch: inserts in-app notifications; org-scoped payload
+ * - jobs.fail_once: test-only controlled failure for retry/DLQ scenarios
+ *
+ * Handlers must not change case workflow status. They run with service-role
+ * only inside the worker process (server-only).
+ */
+export async function processClaimedJobs(
+  workerId: string,
+  limit = 10
+): Promise<{ processed: number; succeeded: number; failed: number }> {
+  const service = createServiceClient();
+  const { data: jobs, error } = await service.rpc("claim_background_jobs", {
+    p_limit: limit,
+    p_worker_id: workerId,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  let succeeded = 0;
+  let failed = 0;
+
+  for (const job of (jobs ?? []) as BackgroundJob[]) {
+    const correlationId = job.correlation_id ?? crypto.randomUUID();
+    const attemptNo = job.attempt_count;
+
+    await service.from("background_job_attempts").insert({
+      job_id: job.id,
+      attempt_no: attemptNo,
+      status: "running",
+      correlation_id: correlationId,
+    });
+
+    try {
+      await runWithCorrelationId(correlationId, async () =>
+        runWithSupabaseClient(service, async () => {
+          await dispatchJob(job);
+        })
+      );
+
+      await service
+        .from("background_jobs")
+        .update({
+          status: "succeeded",
+          completed_at: new Date().toISOString(),
+          locked_at: null,
+          locked_by: null,
+          last_error: null,
+        })
+        .eq("id", job.id);
+
+      await service
+        .from("background_job_attempts")
+        .update({
+          status: "succeeded",
+          finished_at: new Date().toISOString(),
+        })
+        .eq("job_id", job.id)
+        .eq("attempt_no", attemptNo);
+
+      succeeded += 1;
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Job handler failed.";
+      const dead = job.attempt_count >= job.max_attempts;
+      const immediate =
+        job.payload.immediateRetry === true ||
+        job.job_type === "jobs.fail_once";
+      const nextRun = new Date(
+        Date.now() + (immediate ? 0 : backoffMs(job.attempt_count))
+      );
+
+      await service
+        .from("background_jobs")
+        .update({
+          status: dead ? "dead_letter" : "failed",
+          last_error: message.slice(0, 2000),
+          run_at: dead ? job.run_at : nextRun.toISOString(),
+          locked_at: null,
+          locked_by: null,
+          completed_at: dead ? new Date().toISOString() : null,
+        })
+        .eq("id", job.id);
+
+      await service
+        .from("background_job_attempts")
+        .update({
+          status: dead ? "dead_letter" : "failed",
+          error: message.slice(0, 2000),
+          finished_at: new Date().toISOString(),
+        })
+        .eq("job_id", job.id)
+        .eq("attempt_no", attemptNo);
+
+      failed += 1;
+    }
+  }
+
+  return {
+    processed: (jobs ?? []).length,
+    succeeded,
+    failed,
+  };
+}
+
+async function dispatchJob(job: BackgroundJob): Promise<void> {
+  const orgId = String(
+    job.payload.organizationId ?? job.organization_id ?? ""
+  );
+  if (!orgId || orgId !== job.organization_id) {
+    throw new Error("Job organization context missing or mismatched.");
+  }
+
+  switch (job.job_type) {
+    case "sla.refresh_case":
+      await handleSlaRefreshJob(job);
+      return;
+    case "notification.dispatch":
+      await handleNotificationDispatchJob(job);
+      return;
+    case "jobs.fail_once":
+      await handleFailOnceJob(job);
+      return;
+    default:
+      throw new Error(`Unknown job type: ${job.job_type}`);
+  }
+}

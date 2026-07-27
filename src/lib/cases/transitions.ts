@@ -1,9 +1,9 @@
 import { canTransition } from "@/lib/auth/permissions";
 import { recordAuditEntry } from "@/lib/cases/audit";
+import { enqueueSlaRefresh } from "@/lib/jobs/domain-enqueue";
 import { notifyUsers } from "@/lib/notifications/service";
 import {
   completeSla,
-  refreshCaseSlaStates,
   syncResolutionSlaForStatus,
 } from "@/lib/sla/service";
 import { createClient } from "@/lib/supabase/server";
@@ -16,12 +16,13 @@ import type { ActionResult, CaseStatus, Profile, UserRole } from "@/types";
 export async function executeTransition(
   profile: Profile,
   input: StatusTransitionInput
-): Promise<ActionResult> {
+): Promise<ActionResult<{ version: number }>> {
   const parsed = statusTransitionSchema.safeParse(input);
   if (!parsed.success) {
     return {
       success: false,
       error: parsed.error.issues[0]?.message ?? "Invalid transition data.",
+      code: "VALIDATION_ERROR",
     };
   }
 
@@ -33,14 +34,34 @@ export async function executeTransition(
     .single();
 
   if (fetchError || !existingCase) {
-    return { success: false, error: "Case not found." };
+    return { success: false, error: "Case not found.", code: "NOT_FOUND" };
   }
 
   if (
     profile.organization_id &&
     existingCase.organization_id !== profile.organization_id
   ) {
-    return { success: false, error: "Case is outside your organization." };
+    return {
+      success: false,
+      error: "Case is outside your organization.",
+      code: "FORBIDDEN",
+    };
+  }
+
+  const currentVersion = Number(existingCase.version ?? 1);
+  if (
+    parsed.data.expectedVersion != null &&
+    parsed.data.expectedVersion !== currentVersion
+  ) {
+    return {
+      success: false,
+      error: "This record was updated by someone else. Refresh and retry.",
+      code: "VERSION_CONFLICT",
+      details: {
+        expectedVersion: parsed.data.expectedVersion,
+        actualVersion: currentVersion,
+      },
+    };
   }
 
   const transition = canTransition(
@@ -53,15 +74,22 @@ export async function executeTransition(
     return {
       success: false,
       error: "You are not allowed to perform this status change.",
+      code: "FORBIDDEN",
     };
   }
 
   if (transition.requiresComment && !parsed.data.comment?.trim()) {
-    return { success: false, error: "A comment is required for this action." };
+    return {
+      success: false,
+      error: "A comment is required for this action.",
+      code: "VALIDATION_ERROR",
+    };
   }
 
+  const nextVersion = currentVersion + 1;
   const updatePayload: Record<string, unknown> = {
     status: parsed.data.nextStatus,
+    version: nextVersion,
   };
 
   if (parsed.data.nextStatus === "UNDER_REVIEW") {
@@ -84,13 +112,30 @@ export async function executeTransition(
     updatePayload.resolution_notes = parsed.data.resolution_notes?.trim();
   }
 
-  const { error: updateError } = await supabase
+  let updateQuery = supabase
     .from("cases")
     .update(updatePayload)
-    .eq("id", parsed.data.caseId);
+    .eq("id", parsed.data.caseId)
+    .eq("version", currentVersion)
+    .select("id, version");
+
+  const { data: updatedRows, error: updateError } = await updateQuery;
 
   if (updateError) {
-    return { success: false, error: updateError.message };
+    return {
+      success: false,
+      error: "Failed to update case.",
+      code: "INTERNAL_ERROR",
+    };
+  }
+
+  if (!updatedRows?.length) {
+    return {
+      success: false,
+      error: "This record was updated by someone else. Refresh and retry.",
+      code: "VERSION_CONFLICT",
+      details: { expectedVersion: currentVersion },
+    };
   }
 
   const eventType =
@@ -109,10 +154,11 @@ export async function executeTransition(
       parsed.data.comment?.trim() ??
       parsed.data.rejection_reason?.trim() ??
       parsed.data.resolution_notes?.trim(),
+    metadata: { version: nextVersion },
   });
 
   if (auditError) {
-    return { success: false, error: auditError };
+    return { success: false, error: auditError, code: "INTERNAL_ERROR" };
   }
 
   if (existingCase.organization_id) {
@@ -136,12 +182,12 @@ export async function executeTransition(
       });
     }
 
-    await refreshCaseSlaStates({
-      caseId: parsed.data.caseId,
+    await enqueueSlaRefresh({
       organizationId: existingCase.organization_id,
+      caseId: parsed.data.caseId,
       priority: existingCase.priority,
       assignedGroupId: existingCase.assigned_group_id,
-      actor: profile,
+      actorId: profile.id,
     });
   }
 
@@ -156,7 +202,7 @@ export async function executeTransition(
     actor: profile,
   });
 
-  return { success: true };
+  return { success: true, data: { version: nextVersion } };
 }
 
 async function emitTransitionNotifications(params: {

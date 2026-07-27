@@ -1,0 +1,37 @@
+name: Duplicate idempotency key
+tags: [reliability]
+actors:
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+actions:
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-idem] Duplicate idempotency key A"
+      categoryCode: wallet
+      subcategoryCode: duplicate_credit
+      idempotencyKey: $runId-create-a
+  - actor: requester
+    action: create_case
+    saveAs: caseIdReplay
+    params:
+      title: "[sim-idem] Duplicate idempotency key A"
+      categoryCode: wallet
+      subcategoryCode: duplicate_credit
+      idempotencyKey: $runId-create-a
+  - actor: requester
+    action: create_case
+    expectError: true
+    params:
+      title: "[sim-idem] Duplicate idempotency key B DIFFERENT"
+      categoryCode: wallet
+      subcategoryCode: missing_promo
+      idempotencyKey: $runId-create-a
+assertions:
+  - type: case_status
+    actor: requester
+    params: { caseId: $caseId, status: SUBMITTED }
+cleanup:
+  caseTitlePrefix: "[sim-idem]"

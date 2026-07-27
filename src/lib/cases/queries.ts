@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { canViewAllCases } from "@/lib/auth/permissions";
-import { refreshCaseSlaStates } from "@/lib/sla/service";
+import { enqueueSlaRefresh } from "@/lib/jobs/domain-enqueue";
 import type { CaseListFilterInput } from "@/lib/validations/case";
 import type {
   AssignmentGroup,
@@ -217,13 +217,17 @@ export async function getCaseById(
     profile.organization_id &&
     caseData.organization_id === profile.organization_id
   ) {
-    await refreshCaseSlaStates({
-      caseId,
-      organizationId: caseData.organization_id,
-      priority: caseData.priority,
-      assignedGroupId: caseData.assigned_group_id,
-      actor: profile,
-    });
+    try {
+      await enqueueSlaRefresh({
+        caseId,
+        organizationId: caseData.organization_id,
+        priority: caseData.priority,
+        assignedGroupId: caseData.assigned_group_id,
+        actorId: profile.id,
+      });
+    } catch {
+      // Non-blocking: detail views must still load if the job bus is unavailable.
+    }
   }
 
   const [
@@ -358,14 +362,22 @@ export async function getWorkspaceQueues(profile: Profile): Promise<{
 
   for (const item of cases) {
     if (item.organization_id) {
-      await refreshCaseSlaStates({
+      await enqueueSlaRefresh({
         caseId: item.id,
         organizationId: item.organization_id,
         priority: item.priority,
         assignedGroupId: item.assigned_group_id,
-        actor: profile,
+        actorId: profile.id,
       });
     }
+  }
+
+  // Best-effort process pending SLA jobs so workspace queues stay current.
+  try {
+    const { processClaimedJobs } = await import("@/lib/jobs/worker");
+    await processClaimedJobs(`workspace-${profile.id}`, 25);
+  } catch {
+    // Worker may be unavailable without service role in some contexts.
   }
 
   // Re-read SLA rows after refresh so queue membership is current.

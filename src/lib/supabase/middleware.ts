@@ -1,8 +1,18 @@
 import { createServerClient, type SetAllCookies } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { CORRELATION_HEADER } from "@/lib/api/errors";
+import { createCorrelationId } from "@/lib/observability/correlation";
 
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+  const correlationId =
+    request.headers.get(CORRELATION_HEADER)?.trim() || createCorrelationId();
+
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(CORRELATION_HEADER, correlationId);
+
+  let supabaseResponse = NextResponse.next({
+    request: { headers: requestHeaders },
+  });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -16,7 +26,9 @@ export async function updateSession(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-          supabaseResponse = NextResponse.next({ request });
+          supabaseResponse = NextResponse.next({
+            request: { headers: requestHeaders },
+          });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
@@ -37,8 +49,6 @@ export async function updateSession(request: NextRequest) {
 
   let activeUser = user;
 
-  // Drop broken sessions (auth user exists but no profile) so we never
-  // bounce forever between /login and /cases.
   if (activeUser) {
     const { data: profile } = await supabase
       .from("profiles")
@@ -58,6 +68,7 @@ export async function updateSession(request: NextRequest) {
         supabaseResponse.cookies.getAll().forEach((cookie) => {
           redirectResponse.cookies.set(cookie.name, cookie.value);
         });
+        redirectResponse.headers.set(CORRELATION_HEADER, correlationId);
         return redirectResponse;
       }
     }
@@ -71,12 +82,10 @@ export async function updateSession(request: NextRequest) {
     supabaseResponse.cookies.getAll().forEach((cookie) => {
       redirectResponse.cookies.set(cookie.name, cookie.value);
     });
+    redirectResponse.headers.set(CORRELATION_HEADER, correlationId);
     return redirectResponse;
   }
 
-  // Do not auto-redirect /login -> /cases here. That redirect pair with
-  // requireProfile() can blank the browser in a loop. signIn() already
-  // sends users to /cases after a successful login.
-
+  supabaseResponse.headers.set(CORRELATION_HEADER, correlationId);
   return supabaseResponse;
 }

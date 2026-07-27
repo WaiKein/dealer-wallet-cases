@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getCorrelationId } from "@/lib/observability/correlation";
 import type { AuditEventType, CaseStatus } from "@/types";
 
 export async function recordAuditEntry(params: {
@@ -11,6 +12,7 @@ export async function recordAuditEntry(params: {
   metadata?: Record<string, unknown>;
 }): Promise<string | null> {
   const supabase = await createClient();
+  const correlationId = getCorrelationId();
   const { error } = await supabase.from("case_audit_history").insert({
     case_id: params.caseId,
     event_type: params.eventType,
@@ -18,7 +20,11 @@ export async function recordAuditEntry(params: {
     to_status: params.toStatus ?? null,
     changed_by: params.changedBy,
     comment: params.comment ?? null,
-    metadata: params.metadata ?? {},
+    metadata: {
+      ...(params.metadata ?? {}),
+      correlationId,
+    },
+    correlation_id: correlationId,
   });
 
   return error?.message ?? null;

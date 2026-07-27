@@ -124,6 +124,7 @@ npm run simulate:smoke
 npm run simulate:workflow
 npm run simulate:security
 npm run simulate:sla
+npm run simulate:reliability
 npm run simulate:all
 ```
 
@@ -131,6 +132,21 @@ With test-control enabled locally, open `/simulator` (Simulator in the header)
 to run scenarios and browse the latest results in the UI.
 
 See `tools/case-simulator/README.md` for details.
+
+## Reliability (production pilot)
+
+- Standard API errors: `{ error: { code, message, details? }, correlationId }`
+- Correlation IDs via `x-correlation-id` (middleware → APIs → audit/notifications/jobs)
+- Optimistic locking: `cases.version` (HTTP 409 `VERSION_CONFLICT`)
+- Idempotency-Key on create + approval/reject/resolve/reopen transitions
+- Background jobs (`background_jobs`) for SLA refresh + notification dispatch
+- Worker: `npm run jobs:worker` or `POST /api/jobs/tick` with `x-jobs-tick-secret`
+- Health: `/api/health/live`, `/api/health/ready`, `/api/health/database`
+- CI: `.github/workflows/ci.yml` (lint, typecheck, unit, build, migrations, smoke)
+- Test-control/simulator routes redirect away in production builds
+
+**Documented system job actions** (service-role, org-scoped, no status transitions):
+`sla.refresh_case`, `notification.dispatch` (see `src/lib/jobs/worker.ts`).
 
 ## Implementation notes
 

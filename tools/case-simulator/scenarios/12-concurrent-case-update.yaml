@@ -1,0 +1,43 @@
+name: Concurrent case update
+tags: [reliability]
+actors:
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+actions:
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-concurrent] Concurrent case update"
+      categoryCode: wallet
+      subcategoryCode: duplicate_credit
+  - actor: agent
+    action: claim_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: acknowledge_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: start_review
+    params: { caseId: $caseId }
+  - actor: agent
+    action: request_information
+    params:
+      caseId: $caseId
+      expectedVersion: $caseVersion
+  - actor: agent
+    action: request_approval
+    expectError: true
+    params:
+      caseId: $caseId
+      expectedVersion: 1
+assertions:
+  - type: case_status
+    actor: agent
+    params: { caseId: $caseId, status: WAITING_FOR_REQUESTER }
+cleanup:
+  caseTitlePrefix: "[sim-concurrent]"
