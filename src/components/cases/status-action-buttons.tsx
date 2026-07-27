@@ -15,12 +15,15 @@ interface StatusActionButtonsProps {
   caseId: string;
   currentStatus: CaseStatus;
   role: UserRole;
+  /** Optimistic lock token from cases.version */
+  version: number;
 }
 
 export function StatusActionButtons({
   caseId,
   currentStatus,
   role,
+  version,
 }: StatusActionButtonsProps) {
   const router = useRouter();
   const transitions = getAvailableTransitions(currentStatus, role);
@@ -29,6 +32,8 @@ export function StatusActionButtons({
   const [rejectionReason, setRejectionReason] = useState("");
   const [resolutionNotes, setResolutionNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [correlationId, setCorrelationId] = useState<string | null>(null);
+  const [isVersionConflict, setIsVersionConflict] = useState(false);
   const [isPending, setIsPending] = useState(false);
 
   if (transitions.length === 0) {
@@ -42,6 +47,8 @@ export function StatusActionButtons({
   function handleAction(nextStatus: CaseStatus) {
     setSelectedStatus(nextStatus);
     setError(null);
+    setCorrelationId(null);
+    setIsVersionConflict(false);
   }
 
   async function handleSubmit() {
@@ -51,6 +58,8 @@ export function StatusActionButtons({
 
     setIsPending(true);
     setError(null);
+    setCorrelationId(null);
+    setIsVersionConflict(false);
 
     try {
       const result = await transitionCaseStatus({
@@ -68,10 +77,15 @@ export function StatusActionButtons({
         comment: comment || undefined,
         rejection_reason: rejectionReason || undefined,
         resolution_notes: resolutionNotes || undefined,
+        expectedVersion: version,
       });
 
       if (result.error) {
         setError(result.error);
+        setCorrelationId(result.correlationId ?? null);
+        if (result.code === "VERSION_CONFLICT") {
+          setIsVersionConflict(true);
+        }
         return;
       }
 
@@ -96,7 +110,36 @@ export function StatusActionButtons({
 
       {error && (
         <Alert className="border-destructive/50 bg-destructive/10">
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription className="space-y-2">
+            <p>{error}</p>
+            {isVersionConflict && (
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm">
+                  Another user updated this case. Refresh to load the latest
+                  version, then retry.
+                </p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedStatus(null);
+                    setError(null);
+                    setCorrelationId(null);
+                    setIsVersionConflict(false);
+                    router.refresh();
+                  }}
+                >
+                  Refresh case
+                </Button>
+              </div>
+            )}
+            {correlationId && (
+              <p className="font-mono text-xs text-muted-foreground">
+                Ref: {correlationId}
+              </p>
+            )}
+          </AlertDescription>
         </Alert>
       )}
 
@@ -106,7 +149,7 @@ export function StatusActionButtons({
             key={transition.to}
             type="button"
             variant={selectedStatus === transition.to ? "default" : "outline"}
-            disabled={isPending}
+            disabled={isPending || isVersionConflict}
             onClick={() => handleAction(transition.to)}
           >
             Move to {STATUS_LABELS[transition.to]}
@@ -114,7 +157,7 @@ export function StatusActionButtons({
         ))}
       </div>
 
-      {selectedStatus && (
+      {selectedStatus && !isVersionConflict && (
         <div className="space-y-3 border-t pt-4">
           <p className="text-sm font-medium">
             Confirm transition to {STATUS_LABELS[selectedStatus]}

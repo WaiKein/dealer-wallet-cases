@@ -1,4 +1,4 @@
-import { jsonError, jsonOk } from "@/lib/api/response";
+import { apiError, jsonOk } from "@/lib/api/response";
 import { isTestControlEnabled } from "@/lib/clock";
 import { refreshCaseSlaStates } from "@/lib/sla/service";
 import { createServiceClient } from "@/lib/supabase/api";
@@ -19,7 +19,7 @@ function authorizeTestControl(request: Request): string | null {
 export async function POST(request: Request) {
   const denied = authorizeTestControl(request);
   if (denied) {
-    return jsonError(denied, 403);
+    return apiError({ code: "FORBIDDEN", message: denied });
   }
 
   const body = (await request.json().catch(() => ({}))) as {
@@ -42,7 +42,10 @@ export async function POST(request: Request) {
 
     const { data: cases, error } = await query;
     if (error) {
-      return jsonError(error.message, 400);
+      return apiError({
+        code: "VALIDATION_ERROR",
+        message: error.message,
+      });
     }
 
     const actor: Profile = {

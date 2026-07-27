@@ -41,7 +41,7 @@ jobs:
 
   simulator-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     needs: [quality, migrations]
     steps:
       - uses: actions/checkout@v4
@@ -84,6 +84,11 @@ jobs:
           echo "App failed to start"; cat /tmp/next-dev.log; exit 1
       - name: Simulator smoke
         run: npm run simulate:smoke
+        env:
+          SIMULATOR_BASE_URL: http://127.0.0.1:3000
+          TEST_CONTROL_SECRET: local-simulator-secret
+      - name: Simulator reliability
+        run: npm run simulate:reliability
         env:
           SIMULATOR_BASE_URL: http://127.0.0.1:3000
           TEST_CONTROL_SECRET: local-simulator-secret

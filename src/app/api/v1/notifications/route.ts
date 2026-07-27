@@ -1,4 +1,4 @@
-import { jsonError, jsonOk } from "@/lib/api/response";
+import { apiError, jsonOk } from "@/lib/api/response";
 import { withActor } from "@/lib/api/with-actor";
 import {
   countUnreadNotifications,
@@ -13,7 +13,10 @@ export async function GET(request: Request) {
     ]);
 
     if (list.error) {
-      return jsonError(list.error, 400);
+      return apiError({
+        code: "VALIDATION_ERROR",
+        message: list.error,
+      });
     }
 
     return jsonOk({

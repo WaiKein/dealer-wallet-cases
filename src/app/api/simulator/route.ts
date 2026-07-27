@@ -1,4 +1,4 @@
-import { jsonError, jsonOk } from "@/lib/api/response";
+import { apiError, jsonOk } from "@/lib/api/response";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { isTestControlEnabled } from "@/lib/clock";
 import {
@@ -8,12 +8,15 @@ import {
 
 export async function GET() {
   if (!isTestControlEnabled()) {
-    return jsonError("Simulator UI is disabled outside test-control environments.", 403);
+    return apiError({
+      code: "FORBIDDEN",
+      message: "Simulator UI is disabled outside test-control environments.",
+    });
   }
 
   const profile = await getCurrentProfile();
   if (!profile) {
-    return jsonError("Authentication required.", 401);
+    return apiError({ code: "UNAUTHORIZED" });
   }
 
   const scenarios = listSimulatorScenarios();

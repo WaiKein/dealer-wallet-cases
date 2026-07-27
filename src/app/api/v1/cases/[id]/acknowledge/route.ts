@@ -1,5 +1,5 @@
 import { acknowledgeCase } from "@/lib/assignment/service";
-import { jsonError, jsonOk } from "@/lib/api/response";
+import { apiError, jsonOk } from "@/lib/api/response";
 import { withActor } from "@/lib/api/with-actor";
 
 export async function POST(
@@ -10,7 +10,7 @@ export async function POST(
   return withActor(request, async ({ profile }) => {
     const result = await acknowledgeCase({ caseId: id, actor: profile });
     if (result.error) {
-      return jsonError(result.error, 403);
+      return apiError({ code: "FORBIDDEN", message: result.error });
     }
     return jsonOk({ caseId: id, acknowledged: true });
   });

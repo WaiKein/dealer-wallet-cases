@@ -1,4 +1,4 @@
-import { jsonError, jsonOk } from "@/lib/api/response";
+import { apiError, jsonOk } from "@/lib/api/response";
 import { withActor } from "@/lib/api/with-actor";
 import { canCommentOnCase } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
@@ -11,7 +11,10 @@ export async function POST(
   const { id } = await context.params;
   return withActor(request, async ({ profile }) => {
     if (!canCommentOnCase(profile.role)) {
-      return jsonError("You cannot comment on cases.", 403);
+      return apiError({
+        code: "FORBIDDEN",
+        message: "You cannot comment on cases.",
+      });
     }
 
     const body = await request.json().catch(() => null);
@@ -20,7 +23,10 @@ export async function POST(
       body: body?.body,
     });
     if (!parsed.success) {
-      return jsonError(parsed.error.issues[0]?.message ?? "Invalid comment.", 400);
+      return apiError({
+        code: "VALIDATION_ERROR",
+        message: parsed.error.issues[0]?.message ?? "Invalid comment.",
+      });
     }
 
     const supabase = await createClient();
@@ -31,7 +37,7 @@ export async function POST(
       .single();
 
     if (fetchError || !existingCase) {
-      return jsonError("Case not found.", 404);
+      return apiError({ code: "NOT_FOUND", message: "Case not found." });
     }
 
     const { data, error } = await supabase
@@ -45,7 +51,10 @@ export async function POST(
       .single();
 
     if (error) {
-      return jsonError(error.message, 400);
+      return apiError({
+        code: "VALIDATION_ERROR",
+        message: error.message,
+      });
     }
 
     return jsonOk({ comment: data }, { status: 201 });

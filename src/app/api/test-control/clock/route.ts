@@ -1,4 +1,4 @@
-import { jsonError, jsonOk } from "@/lib/api/response";
+import { apiError, jsonOk } from "@/lib/api/response";
 import {
   enableSystemClock,
   enableTestClock,
@@ -40,7 +40,7 @@ async function auditTestControl(action: string, metadata: Record<string, unknown
 export async function GET(request: Request) {
   const denied = authorizeTestControl(request);
   if (denied) {
-    return jsonError(denied, 403);
+    return apiError({ code: "FORBIDDEN", message: denied });
   }
   return jsonOk({
     now: getClock().now().toISOString(),
@@ -51,7 +51,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const denied = authorizeTestControl(request);
   if (denied) {
-    return jsonError(denied, 403);
+    return apiError({ code: "FORBIDDEN", message: denied });
   }
 
   const body = (await request.json().catch(() => ({}))) as {
@@ -81,5 +81,8 @@ export async function POST(request: Request) {
     return jsonOk({ now: clock.toISOString(), usingTestClock: true });
   }
 
-  return jsonError("Unsupported clock action. Use reset|set|advance.", 400);
+  return apiError({
+    code: "VALIDATION_ERROR",
+    message: "Unsupported clock action. Use reset|set|advance.",
+  });
 }

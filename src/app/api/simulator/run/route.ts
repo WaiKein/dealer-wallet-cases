@@ -1,4 +1,4 @@
-import { jsonError, jsonOk } from "@/lib/api/response";
+import { apiError, jsonOk } from "@/lib/api/response";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { isTestControlEnabled } from "@/lib/clock";
 import { listSimulatorScenarios } from "@/lib/simulator/fs";
@@ -8,12 +8,15 @@ export const maxDuration = 300;
 
 export async function POST(request: Request) {
   if (!isTestControlEnabled()) {
-    return jsonError("Simulator UI is disabled outside test-control environments.", 403);
+    return apiError({
+      code: "FORBIDDEN",
+      message: "Simulator UI is disabled outside test-control environments.",
+    });
   }
 
   const profile = await getCurrentProfile();
   if (!profile) {
-    return jsonError("Authentication required.", 401);
+    return apiError({ code: "UNAUTHORIZED" });
   }
 
   const body = (await request.json().catch(() => ({}))) as {
@@ -45,9 +48,10 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    return jsonError(
-      error instanceof Error ? error.message : "Simulator run failed.",
-      500
-    );
+    return apiError({
+      code: "INTERNAL_ERROR",
+      message:
+        error instanceof Error ? error.message : "Simulator run failed.",
+    });
   }
 }

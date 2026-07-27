@@ -157,6 +157,7 @@ export function CaseDetail({
             caseId={caseData.id}
             currentStatus={caseData.status}
             role={profile.role}
+            version={caseData.version ?? 1}
           />
 
           {canReassign && (

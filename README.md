@@ -137,16 +137,18 @@ See `tools/case-simulator/README.md` for details.
 
 - Standard API errors: `{ error: { code, message, details? }, correlationId }`
 - Correlation IDs via `x-correlation-id` (middleware → APIs → audit/notifications/jobs)
-- Optimistic locking: `cases.version` (HTTP 409 `VERSION_CONFLICT`)
+- Optimistic locking: `cases.version` (HTTP 409 `VERSION_CONFLICT`); dashboard sends `expectedVersion`
 - Idempotency-Key on create + approval/reject/resolve/reopen transitions
 - Background jobs (`background_jobs`) for SLA refresh + notification dispatch
-- Worker: `npm run jobs:worker` or `POST /api/jobs/tick` with `x-jobs-tick-secret`
+- Worker: `npm run jobs:worker` (optional `JOBS_POLL_INTERVAL_MS` loop) or cron → `POST /api/jobs/tick` with `x-jobs-tick-secret`
 - Health: `/api/health/live`, `/api/health/ready`, `/api/health/database`
-- CI: `.github/workflows/ci.yml` (lint, typecheck, unit, build, migrations, smoke)
+- CI: `.github/workflows/ci.yml` (lint, typecheck, unit, build, migrations, smoke + reliability)
 - Test-control/simulator routes redirect away in production builds
 
 **Documented system job actions** (service-role, org-scoped, no status transitions):
 `sla.refresh_case`, `notification.dispatch` (see `src/lib/jobs/worker.ts`).
+
+**Ops runbook:** [docs/pilot-ops.md](docs/pilot-ops.md) (env checklist, worker/cron, health, rollback).
 
 ## Implementation notes
 

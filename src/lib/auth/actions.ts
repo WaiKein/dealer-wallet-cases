@@ -2,28 +2,38 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import {
+  actionFailure,
+  withServerActionCorrelation,
+} from "@/lib/observability/server-action";
 import type { ActionResult } from "@/types";
 
 export async function signIn(
   email: string,
   password: string
 ): Promise<ActionResult> {
-  const supabase = await createClient();
+  return withServerActionCorrelation(async () => {
+    const supabase = await createClient();
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      return actionFailure("Authentication failed.", {
+        code: "UNAUTHORIZED",
+      });
+    }
+
+    redirect("/dashboard");
   });
-
-  if (error) {
-    return { success: false, error: error.message };
-  }
-
-  redirect("/dashboard");
 }
 
 export async function signOut(): Promise<void> {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  redirect("/login");
+  return withServerActionCorrelation(async () => {
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+    redirect("/login");
+  });
 }
