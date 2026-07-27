@@ -1,10 +1,10 @@
 import { jsonError, jsonOk } from "@/lib/api/response";
 import {
+  enableSystemClock,
+  enableTestClock,
   getClock,
   getTestClock,
   isTestControlEnabled,
-  useSystemClock,
-  useTestClock,
 } from "@/lib/clock";
 import { createServiceClient } from "@/lib/supabase/api";
 
@@ -61,12 +61,12 @@ export async function POST(request: Request) {
   };
 
   if (body.action === "reset") {
-    useSystemClock();
+    enableSystemClock();
     await auditTestControl("clock.reset", {});
     return jsonOk({ now: getClock().now().toISOString(), usingTestClock: false });
   }
 
-  const clock = getTestClock() ?? useTestClock();
+  const clock = getTestClock() ?? enableTestClock();
 
   if (body.action === "set" && body.iso) {
     clock.set(new Date(body.iso));

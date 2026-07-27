@@ -36,7 +36,8 @@ jobs:
         run: |
           supabase db start
           supabase db reset --yes
-          supabase migration list
+          test -f supabase/migrations/20260101000008_reliability_pilot.sql
+          supabase migration list --local
 
   simulator-smoke:
     runs-on: ubuntu-latest

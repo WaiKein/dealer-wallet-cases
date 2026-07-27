@@ -112,14 +112,12 @@ export async function executeTransition(
     updatePayload.resolution_notes = parsed.data.resolution_notes?.trim();
   }
 
-  let updateQuery = supabase
+  const { data: updatedRows, error: updateError } = await supabase
     .from("cases")
     .update(updatePayload)
     .eq("id", parsed.data.caseId)
     .eq("version", currentVersion)
     .select("id, version");
-
-  const { data: updatedRows, error: updateError } = await updateQuery;
 
   if (updateError) {
     return {

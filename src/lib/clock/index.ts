@@ -53,12 +53,12 @@ export function getClock(): Clock {
   return activeClock;
 }
 
-export function useSystemClock(): void {
+export function enableSystemClock(): void {
   activeClock = systemClock;
   testClock = null;
 }
 
-export function useTestClock(initial?: Date): TestClock {
+export function enableTestClock(initial?: Date): TestClock {
   if (!isTestControlEnabled()) {
     throw new Error("Test clock is disabled outside test-control environments.");
   }
@@ -66,6 +66,11 @@ export function useTestClock(initial?: Date): TestClock {
   activeClock = testClock;
   return testClock;
 }
+
+/** @deprecated Prefer enableSystemClock — kept to avoid confusion with React hooks. */
+export const useSystemClock = enableSystemClock;
+/** @deprecated Prefer enableTestClock — kept to avoid confusion with React hooks. */
+export const useTestClock = enableTestClock;
 
 export function getTestClock(): TestClock | null {
   return testClock;
