@@ -1,0 +1,70 @@
+name: Email outbox delivery when flag enabled
+description: Enable email flag, trigger approval notification, assert delivery outbox row
+tags: [email, notifications]
+actors:
+  - id: admin
+    email: admin@example.com
+    password: Password123!
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+  - id: approver
+    email: approver@example.com
+    password: Password123!
+setup:
+  titlePrefix: "[sim-email]"
+actions:
+  - actor: admin
+    action: set_feature_flag
+    params:
+      code: email_notifications_enabled
+      isEnabled: true
+  - actor: agent
+    action: reset_wallet_mock
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-email] Email outbox path"
+      categoryCode: wallet
+      subcategoryCode: duplicate_credit
+      priority: medium
+  - actor: agent
+    action: claim_case
+    params:
+      caseId: $caseId
+  - actor: agent
+    action: acknowledge_case
+    params:
+      caseId: $caseId
+  - actor: agent
+    action: start_review
+    params:
+      caseId: $caseId
+  - actor: agent
+    action: request_approval
+    params:
+      caseId: $caseId
+  - actor: agent
+    action: drain_jobs
+    params: { limit: 30 }
+  - actor: agent
+    action: drain_jobs
+    params: { limit: 30 }
+  - actor: admin
+    action: set_feature_flag
+    params:
+      code: email_notifications_enabled
+      isEnabled: false
+assertions:
+  - type: email_delivery_exists
+    actor: admin
+    params:
+      caseId: $caseId
+      eventType: approval_requested
+      status: DELIVERED
+cleanup:
+  caseTitlePrefix: "[sim-email]"

@@ -40,3 +40,14 @@ export async function requireRole(allowedRoles: Profile["role"][]): Promise<Prof
   }
   return profile;
 }
+
+export async function requireAdmin(): Promise<Profile> {
+  const profile = await requireProfile();
+  if (profile.role !== "admin") {
+    redirect("/dashboard");
+  }
+  if (!profile.organization_id) {
+    redirect("/dashboard");
+  }
+  return profile;
+}

@@ -5,6 +5,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   operations_agent: "Operations Agent",
   approver: "Approver",
   team_lead: "Team Lead",
+  admin: "Administrator",
 };
 
 export const STATUS_LABELS: Record<CaseStatus, string> = {
@@ -31,6 +32,7 @@ export function isUserRole(value: string): value is UserRole {
     "operations_agent",
     "approver",
     "team_lead",
+    "admin",
   ].includes(value);
 }
 

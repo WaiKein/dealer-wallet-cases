@@ -1,0 +1,28 @@
+name: Management dashboard KPIs
+description: Authorised agent can load aggregated management snapshot
+tags: [management, dashboard]
+actors:
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+setup:
+  titlePrefix: "[sim-mgmt]"
+actions:
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-mgmt] Dashboard sample case"
+      categoryCode: wallet
+      subcategoryCode: duplicate_credit
+      priority: medium
+  - actor: agent
+    action: get_management_dashboard
+assertions:
+  - type: management_kpis_present
+    actor: agent
+cleanup:
+  caseTitlePrefix: "[sim-mgmt]"

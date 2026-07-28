@@ -1,0 +1,77 @@
+name: Admin configuration change retains rule version on case
+description: Case approval request keeps the rule code/version selected at request time
+tags: [admin, approvals, phase9]
+actors:
+  - id: admin
+    email: admin@example.com
+    password: Password123!
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+setup:
+  titlePrefix: "[sim-p9-cfg]"
+actions:
+  - actor: admin
+    action: create_approval_rule
+    saveAs: ruleId
+    params:
+      code: sim_cfg_version
+      name: Simulator config version rule
+      sequence: 87
+      min_amount: 30000
+      max_amount: 30999.99
+      approval_levels: 1
+      required_approver_role: approver
+      change_reason: Phase 9 config version create
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-p9-cfg] Config version retained"
+      categoryCode: wallet
+      subcategoryCode: duplicate_credit
+      priority: medium
+      adjustment_amount: 30500
+  - actor: agent
+    action: claim_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: acknowledge_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: start_review
+    params: { caseId: $caseId }
+  - actor: agent
+    action: request_approval
+    params: { caseId: $caseId }
+  - actor: admin
+    action: update_approval_rule
+    params:
+      id: $ruleId
+      code: sim_cfg_version
+      name: Simulator config version rule (updated)
+      sequence: 87
+      min_amount: 30000
+      max_amount: 30999.99
+      approval_levels: 1
+      required_approver_role: approver
+      change_reason: Phase 9 config version update
+  - actor: admin
+    action: list_admin_resource
+    params:
+      resource: approval-rules
+      q: sim_cfg_version
+assertions:
+  - type: approval_rule_selected
+    actor: agent
+    params: { caseId: $caseId, code: sim_cfg_version }
+  - type: complete_audit_trail
+    actor: agent
+    params:
+      caseId: $caseId
+      eventTypes: [status_change]
+cleanup:
+  caseTitlePrefix: "[sim-p9-cfg]"

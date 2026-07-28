@@ -39,6 +39,10 @@ export function CaseFilters() {
     }
 
     const params = new URLSearchParams();
+    const viewId = searchParams.get("viewId");
+    if (viewId) {
+      params.set("viewId", viewId);
+    }
     if (nextStatus !== "all") {
       params.set("status", nextStatus);
     }

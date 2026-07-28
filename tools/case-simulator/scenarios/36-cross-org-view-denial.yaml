@@ -1,0 +1,34 @@
+name: Cross-organisation saved view denial
+description: Actor cannot load a saved view belonging to another organisation
+tags: [views, security, phase9]
+actors:
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+setup:
+  titlePrefix: "[sim-p9-xview]"
+actions:
+  - actor: agent
+    action: create_fixture_organization
+    saveAs: foreignOrgId
+    params:
+      name: Simulator Foreign Org Views
+  - actor: agent
+    action: create_fixture_saved_view
+    saveAs: foreignViewId
+    params:
+      organizationId: $foreignOrgId
+      name: Foreign org shared view
+  - actor: agent
+    action: load_saved_view
+    params: { viewId: $foreignViewId }
+    expectError: true
+assertions:
+  - type: saved_view_access
+    actor: agent
+    params: { viewId: $foreignViewId, allowed: false }
+  - type: error_code
+    actor: agent
+    params: { code: NOT_FOUND }
+cleanup:
+  caseTitlePrefix: "[sim-p9-xview]"

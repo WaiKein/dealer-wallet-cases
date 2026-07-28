@@ -1,37 +1,12 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+import {
+  confirmTransition,
+  login,
+  openCaseByTitle,
+  signOut,
+} from "./helpers";
 
-const PASSWORD = "Password123!";
 const CASE_TITLE = `E2E auto assignment case ${Date.now()}`;
-
-async function login(page: Page, email: string) {
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(PASSWORD);
-  await page.getByRole("button", { name: /sign in/i }).click();
-  await expect(page).not.toHaveURL(/\/login/);
-}
-
-async function signOut(page: Page) {
-  await page.getByRole("button", { name: /sign out/i }).click();
-  await expect(page).toHaveURL(/\/login/);
-}
-
-async function openCaseByTitle(page: Page, title: string) {
-  await page
-    .locator('a[href^="/cases/"]')
-    .filter({ hasText: title })
-    .first()
-    .click();
-  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-}
-
-async function confirmTransition(page: Page, buttonName: RegExp) {
-  await page.getByRole("button", { name: buttonName }).click();
-  await page.getByRole("button", { name: /confirm status change/i }).click();
-  await expect(
-    page.getByRole("button", { name: /confirm status change/i })
-  ).toHaveCount(0, { timeout: 15_000 });
-}
 
 test.describe.configure({ mode: "serial" });
 

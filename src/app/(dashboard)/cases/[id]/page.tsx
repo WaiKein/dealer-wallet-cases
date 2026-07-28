@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import { CaseDetail } from "@/components/cases/case-detail";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { getLatestApprovalForCase } from "@/lib/approvals/service";
 import { canActAsGroupLead, canClaimCase } from "@/lib/assignment/rules";
 import { requireProfile } from "@/lib/auth/session";
 import { getCaseById, listGroupAgents } from "@/lib/cases/queries";
+import { getLatestExecutionForCase } from "@/lib/executions/service";
 import { createClient } from "@/lib/supabase/server";
 import type { LeadAuthorizationMode } from "@/types";
 
@@ -69,6 +71,9 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
     }
   }
 
+  const approval = await getLatestApprovalForCase(id);
+  const { execution, attempts } = await getLatestExecutionForCase(id);
+
   return (
     <CaseDetail
       caseData={data}
@@ -76,6 +81,10 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
       agents={agents}
       canClaim={canClaim}
       canReassign={canReassign}
+      approvalRequest={approval.request}
+      approvalSteps={approval.steps}
+      execution={execution}
+      executionAttempts={attempts}
     />
   );
 }

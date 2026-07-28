@@ -74,6 +74,7 @@ export async function applyAssignmentRules(params: {
     title: "Case assigned to your group",
     body: "A new case was assigned to your assignment group.",
     suffix: matched.assignment_group_id,
+    emailEventType: "case_assigned",
   });
 
   return { groupId: matched.assignment_group_id, error: null };
@@ -196,6 +197,16 @@ export async function claimCase(params: {
     title: "Case claimed",
     body: `${params.actor.full_name} claimed a case in your group.`,
     suffix: `claim:${params.actor.id}`,
+    emailEventType: "case_assigned",
+  });
+
+  const { systemResolveExceptionSources } = await import(
+    "@/lib/exceptions/service"
+  );
+  await systemResolveExceptionSources({
+    organizationId: params.actor.organization_id,
+    sourceRefs: [`case:${params.caseId}:unassigned`],
+    note: "Case claimed by agent.",
   });
 
   return { error: null };

@@ -1,0 +1,31 @@
+name: Dashboard KPI validation after case create
+description: Management dashboard KPIs respond and cases_submitted is at least 1
+tags: [management, phase9]
+actors:
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+setup:
+  titlePrefix: "[sim-p9-kpi]"
+actions:
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-p9-kpi] KPI sample"
+      categoryCode: wallet
+      subcategoryCode: duplicate_credit
+      priority: medium
+  - actor: agent
+    action: get_management_dashboard
+assertions:
+  - type: management_kpis_present
+    actor: agent
+  - type: dashboard_kpi_value
+    actor: agent
+    params: { key: cases_submitted, min: 1 }
+cleanup:
+  caseTitlePrefix: "[sim-p9-kpi]"

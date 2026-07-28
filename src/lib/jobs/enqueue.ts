@@ -4,6 +4,8 @@ import { createServiceClient } from "@/lib/supabase/api";
 export type JobType =
   | "sla.refresh_case"
   | "notification.dispatch"
+  | "integration.execute_wallet"
+  | "integration.inquire_wallet_status"
   | "jobs.fail_once"; // test helper for retry/DLQ scenarios
 
 export type JobStatus =

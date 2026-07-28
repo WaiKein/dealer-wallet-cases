@@ -1,0 +1,70 @@
+name: Integration execution after approval
+description: Approval queues wallet execution; jobs drain to SUCCEEDED before resolve
+tags: [wallet, integration, workflow]
+actors:
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+  - id: approver
+    email: approver@example.com
+    password: Password123!
+setup:
+  titlePrefix: "[sim-exec]"
+actions:
+  - actor: agent
+    action: reset_wallet_mock
+  - actor: agent
+    action: configure_wallet_mock
+    params:
+      scope: default
+      executeOutcome: SUCCESS
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-exec] Integration execution happy path"
+      categoryCode: wallet
+      subcategoryCode: duplicate_credit
+      priority: medium
+  - actor: agent
+    action: claim_case
+    params:
+      caseId: $caseId
+  - actor: agent
+    action: acknowledge_case
+    params:
+      caseId: $caseId
+  - actor: agent
+    action: start_review
+    params:
+      caseId: $caseId
+  - actor: agent
+    action: request_approval
+    params:
+      caseId: $caseId
+  - actor: approver
+    action: approve_case
+    params:
+      caseId: $caseId
+  - actor: agent
+    action: drain_jobs
+    params: { limit: 20 }
+  - actor: agent
+    action: drain_jobs
+    params: { limit: 20 }
+assertions:
+  - type: case_status
+    actor: agent
+    params:
+      caseId: $caseId
+      status: APPROVED
+  - type: integration_execution_status
+    actor: agent
+    params:
+      caseId: $caseId
+      status: SUCCEEDED
+cleanup:
+  caseTitlePrefix: "[sim-exec]"

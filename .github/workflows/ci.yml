@@ -37,6 +37,10 @@ jobs:
           supabase db start
           supabase db reset --yes
           test -f supabase/migrations/20260101000008_reliability_pilot.sql
+          test -f supabase/migrations/20260101000009_admin_role.sql
+          test -f supabase/migrations/20260101000010_admin_console.sql
+          test -f supabase/migrations/20260101000011_admin_console_seed.sql
+          test -f supabase/migrations/20260101000012_approval_runtime.sql
           supabase migration list --local
 
   simulator-smoke:

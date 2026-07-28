@@ -113,8 +113,11 @@ All seed users share the password `Password123!`
 | agent@example.com | Operations Agent |
 | teamlead@example.com | Team Lead |
 | approver@example.com | Approver |
+| admin@example.com | Administrator |
 
-## Case simulator
+## Administration
+
+Organisation admins can manage configuration at `/admin` (see [docs/admin-console.md](docs/admin-console.md)).
 
 API-driven workflow simulator lives in `tools/case-simulator`.
 
@@ -149,6 +152,14 @@ See `tools/case-simulator/README.md` for details.
 `sla.refresh_case`, `notification.dispatch` (see `src/lib/jobs/worker.ts`).
 
 **Ops runbook:** [docs/pilot-ops.md](docs/pilot-ops.md) (env checklist, worker/cron, health, rollback).
+**Admin console:** [docs/admin-console.md](docs/admin-console.md).
+**Approval matrix / maker-checker:** [docs/approval-matrix.md](docs/approval-matrix.md), [docs/maker-checker.md](docs/maker-checker.md).
+**Wallet provider (mock):** [docs/wallet-provider-interface.md](docs/wallet-provider-interface.md), [docs/mock-wallet-provider.md](docs/mock-wallet-provider.md).
+**Saved case views:** [docs/saved-case-views.md](docs/saved-case-views.md).
+**Management dashboard:** [docs/management-dashboard.md](docs/management-dashboard.md).
+**Simulator expansion:** [docs/simulator-expansion.md](docs/simulator-expansion.md).
+**Exception queues:** [docs/exception-queues.md](docs/exception-queues.md).
+**Email notifications:** [docs/email-notifications.md](docs/email-notifications.md).
 
 ## Implementation notes
 

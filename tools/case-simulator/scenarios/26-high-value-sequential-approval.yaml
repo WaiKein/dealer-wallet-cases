@@ -1,0 +1,67 @@
+name: High-value sequential two-level approval
+description: Matched multi-level rule requires two sequential approvals before APPROVED
+tags: [approvals, workflow, phase9]
+actors:
+  - id: admin
+    email: admin@example.com
+    password: Password123!
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+  - id: approver
+    email: approver@example.com
+    password: Password123!
+setup:
+  titlePrefix: "[sim-p9-seq]"
+actions:
+  - actor: admin
+    action: create_approval_rule
+    params:
+      code: sim_high_sequential
+      name: Simulator high sequential
+      sequence: 5
+      min_amount: 10000
+      max_amount: 19999.99
+      approval_levels: 2
+      sequential_required: true
+      required_approver_role: approver
+      change_reason: Phase 9 sequential scenario
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-p9-seq] High value sequential"
+      categoryCode: wallet
+      subcategoryCode: duplicate_credit
+      priority: high
+      adjustment_amount: 15000
+  - actor: agent
+    action: claim_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: acknowledge_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: start_review
+    params: { caseId: $caseId }
+  - actor: agent
+    action: request_approval
+    params: { caseId: $caseId }
+  - actor: approver
+    action: approve_level
+    params: { caseId: $caseId }
+assertions:
+  - type: approval_rule_selected
+    actor: agent
+    params: { caseId: $caseId, code: sim_high_sequential }
+  - type: approval_level_sequence
+    actor: agent
+    params: { caseId: $caseId, levels: 2, approvedCount: 1, pendingCount: 1 }
+  - type: case_status
+    actor: agent
+    params: { caseId: $caseId, status: PENDING_APPROVAL }
+cleanup:
+  caseTitlePrefix: "[sim-p9-seq]"

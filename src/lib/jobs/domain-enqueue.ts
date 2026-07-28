@@ -23,12 +23,14 @@ export async function enqueueSlaRefresh(params: {
 
 export async function enqueueNotificationDispatch(params: {
   organizationId: string;
-  recipients: { id: string; role: UserRole }[];
+  recipients: { id: string; role: UserRole; email?: string | null }[];
   caseId: string;
   type: NotificationType;
   title: string;
   body: string;
   suffix?: string;
+  emailEventType?: string;
+  variables?: Record<string, string>;
 }) {
   if (!params.recipients.length) {
     return { id: null, error: null };
@@ -44,10 +46,52 @@ export async function enqueueNotificationDispatch(params: {
       title: params.title,
       body: params.body,
       suffix: params.suffix,
+      emailEventType: params.emailEventType,
+      variables: params.variables,
     },
     idempotencyKey: `notify:${params.type}:${params.caseId}:${params.suffix ?? "default"}:${params.recipients
       .map((r) => r.id)
       .sort()
       .join(",")}`,
+  });
+}
+
+export async function enqueueIntegrationExecute(params: {
+  organizationId: string;
+  executionId: string;
+  caseId: string;
+  runAt?: Date;
+  attemptSuffix?: string;
+}) {
+  return enqueueJob({
+    organizationId: params.organizationId,
+    jobType: "integration.execute_wallet",
+    payload: {
+      executionId: params.executionId,
+      caseId: params.caseId,
+    },
+    runAt: params.runAt,
+    maxAttempts: 8,
+    idempotencyKey: `integration.execute:${params.executionId}:${params.attemptSuffix ?? "initial"}`,
+  });
+}
+
+export async function enqueueIntegrationStatusInquiry(params: {
+  organizationId: string;
+  executionId: string;
+  caseId: string;
+  runAt?: Date;
+  attemptSuffix?: string;
+}) {
+  return enqueueJob({
+    organizationId: params.organizationId,
+    jobType: "integration.inquire_wallet_status",
+    payload: {
+      executionId: params.executionId,
+      caseId: params.caseId,
+    },
+    runAt: params.runAt,
+    maxAttempts: 8,
+    idempotencyKey: `integration.status:${params.executionId}:${params.attemptSuffix ?? "initial"}`,
   });
 }

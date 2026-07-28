@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { ApprovalPanel } from "@/components/cases/approval-panel";
 import { AuditTimeline } from "@/components/cases/audit-timeline";
 import { CaseActionButtons } from "@/components/cases/case-action-buttons";
 import { CaseAttachments } from "@/components/cases/case-attachments";
 import { CaseComments } from "@/components/cases/case-comments";
 import { CaseStatusBadge } from "@/components/cases/case-status-badge";
+import { ExecutionPanel } from "@/components/cases/execution-panel";
 import { ReassignAgentForm } from "@/components/cases/reassign-agent-form";
 import { SlaStateBadge } from "@/components/cases/sla-state-badge";
 import { StatusActionButtons } from "@/components/cases/status-action-buttons";
@@ -28,6 +30,28 @@ interface CaseDetailProps {
   agents: { id: string; full_name: string; email: string }[];
   canClaim: boolean;
   canReassign: boolean;
+  approvalRequest?: Record<string, unknown> | null;
+  approvalSteps?: Record<string, unknown>[];
+  execution?: {
+    id: string;
+    status: string;
+    provider?: string;
+    attempt_count?: number;
+    response_code?: string | null;
+    sanitised_response_summary?: string | null;
+    failure_category?: string | null;
+    requires_status_inquiry?: boolean;
+    external_transaction_ref?: string | null;
+    version?: number;
+  } | null;
+  executionAttempts?: {
+    id: string;
+    attempt_no: number;
+    kind: string;
+    outcome?: string | null;
+    response_code?: string | null;
+    sanitised_error?: string | null;
+  }[];
 }
 
 function findSla(records: CaseSla[] | undefined, type: CaseSla["sla_type"]) {
@@ -40,6 +64,10 @@ export function CaseDetail({
   agents,
   canClaim,
   canReassign,
+  approvalRequest = null,
+  approvalSteps = [],
+  execution = null,
+  executionAttempts = [],
 }: CaseDetailProps) {
   const firstResponse = findSla(caseData.sla_records, "first_response");
   const resolution = findSla(caseData.sla_records, "resolution");
@@ -138,6 +166,7 @@ export function CaseDetail({
           <CaseComments
             caseId={caseData.id}
             comments={caseData.comments ?? []}
+            viewerRole={profile.role}
           />
 
           <CaseAttachments
@@ -158,6 +187,79 @@ export function CaseDetail({
             currentStatus={caseData.status}
             role={profile.role}
             version={caseData.version ?? 1}
+            approvalVersion={
+              approvalRequest && typeof approvalRequest.version === "number"
+                ? approvalRequest.version
+                : undefined
+            }
+          />
+
+          <ApprovalPanel
+            request={
+              approvalRequest
+                ? {
+                    status: String(approvalRequest.status),
+                    requested_amount: Number(approvalRequest.requested_amount),
+                    approved_amount:
+                      approvalRequest.approved_amount == null
+                        ? null
+                        : Number(approvalRequest.approved_amount),
+                    approval_levels: Number(approvalRequest.approval_levels ?? 1),
+                    approval_rule_code:
+                      (approvalRequest.approval_rule_code as string | null) ??
+                      null,
+                    version: Number(approvalRequest.version ?? 1),
+                  }
+                : null
+            }
+            steps={approvalSteps.map((step) => ({
+              id: String(step.id),
+              level_no: Number(step.level_no),
+              status: String(step.status),
+              required_role: (step.required_role as string | null) ?? null,
+              decided_by: (step.decided_by as string | null) ?? null,
+              decided_as_delegate_of:
+                (step.decided_as_delegate_of as string | null) ?? null,
+              rejection_reason:
+                (step.rejection_reason as string | null) ?? null,
+            }))}
+          />
+
+          <ExecutionPanel
+            caseId={caseData.id}
+            canManage={
+              profile.role === "operations_agent" ||
+              profile.role === "team_lead" ||
+              profile.role === "admin"
+            }
+            execution={
+              execution
+                ? {
+                    id: execution.id,
+                    status: execution.status,
+                    provider: execution.provider ?? "mock_wallet",
+                    attempt_count: Number(execution.attempt_count ?? 0),
+                    response_code: execution.response_code ?? null,
+                    sanitised_response_summary:
+                      execution.sanitised_response_summary ?? null,
+                    failure_category: execution.failure_category ?? null,
+                    requires_status_inquiry: Boolean(
+                      execution.requires_status_inquiry
+                    ),
+                    external_transaction_ref:
+                      execution.external_transaction_ref ?? null,
+                    version: Number(execution.version ?? 1),
+                  }
+                : null
+            }
+            attempts={executionAttempts.map((attempt) => ({
+              id: attempt.id,
+              attempt_no: Number(attempt.attempt_no),
+              kind: attempt.kind,
+              outcome: attempt.outcome ?? null,
+              response_code: attempt.response_code ?? null,
+              sanitised_error: attempt.sanitised_error ?? null,
+            }))}
           />
 
           {canReassign && (

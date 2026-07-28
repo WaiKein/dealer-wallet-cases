@@ -1,0 +1,70 @@
+name: Exception queue after permanent wallet failure
+description: Permanent mock failure creates an operations exception row
+tags: [exceptions, wallet, integration]
+actors:
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+  - id: approver
+    email: approver@example.com
+    password: Password123!
+setup:
+  titlePrefix: "[sim-exc]"
+actions:
+  - actor: agent
+    action: reset_wallet_mock
+  - actor: agent
+    action: configure_wallet_mock
+    params:
+      scope: default
+      executeOutcome: PERMANENT_FAILURE
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-exc] Permanent wallet failure exception"
+      categoryCode: wallet
+      subcategoryCode: duplicate_credit
+      priority: medium
+  - actor: agent
+    action: claim_case
+    params:
+      caseId: $caseId
+  - actor: agent
+    action: acknowledge_case
+    params:
+      caseId: $caseId
+  - actor: agent
+    action: start_review
+    params:
+      caseId: $caseId
+  - actor: agent
+    action: request_approval
+    params:
+      caseId: $caseId
+  - actor: approver
+    action: approve_case
+    params:
+      caseId: $caseId
+  - actor: agent
+    action: drain_jobs
+    params: { limit: 20 }
+  - actor: agent
+    action: drain_jobs
+    params: { limit: 20 }
+assertions:
+  - type: integration_execution_status
+    actor: agent
+    params:
+      caseId: $caseId
+      status: FAILED_FINAL
+  - type: exception_queue_contains
+    actor: agent
+    params:
+      caseId: $caseId
+      queueType: integration_failed_final
+cleanup:
+  caseTitlePrefix: "[sim-exc]"

@@ -1,0 +1,49 @@
+name: Wallet mock uncertain timeout then status inquiry
+description: Uncertain timeout requires status inquiry; NOT_FOUND allows a safe execute retry
+tags: [wallet, integration]
+actors:
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+actions:
+  - actor: agent
+    action: reset_wallet_mock
+  - actor: agent
+    action: configure_wallet_mock
+    params:
+      scope: idempotencyKey
+      idempotencyKey: sim-wallet-uncertain-1
+      executeOutcome: TIMEOUT_AFTER_POSSIBLE_PROCESSING
+      statusOutcome: STATUS_NOT_FOUND
+      afterAttempts: 2
+      thenExecuteOutcome: SUCCESS
+  - actor: agent
+    action: execute_wallet_adjustment
+    saveAs: walletExecute
+    params:
+      idempotencyKey: sim-wallet-uncertain-1
+      caseId: "00000000-0000-4000-8000-000000000104"
+  - actor: agent
+    action: inquire_wallet_status
+    saveAs: walletStatus
+    params:
+      caseId: "00000000-0000-4000-8000-000000000104"
+  - actor: agent
+    action: execute_wallet_adjustment
+    saveAs: walletExecute
+    params:
+      idempotencyKey: sim-wallet-uncertain-1
+      caseId: "00000000-0000-4000-8000-000000000104"
+assertions:
+  - type: wallet_status_outcome
+    actor: agent
+    params:
+      outcome: STATUS_NOT_FOUND
+      processingCertainty: NOT_PROCESSED
+      safeToRetryExecute: true
+  - type: wallet_execute_outcome
+    actor: agent
+    params:
+      outcome: SUCCESS
+      processingCertainty: PROCESSED
+      requiresStatusInquiry: false

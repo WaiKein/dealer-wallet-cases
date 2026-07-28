@@ -1,0 +1,64 @@
+name: Assigned agent maker-checker denial
+description: Assigned ops agent cannot approve the case they processed
+tags: [approvals, security, phase9]
+actors:
+  - id: admin
+    email: admin@example.com
+    password: Password123!
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+setup:
+  titlePrefix: "[sim-p9-mc]"
+actions:
+  - actor: admin
+    action: create_approval_rule
+    params:
+      code: sim_ops_approver
+      name: Simulator ops as approver
+      sequence: 4
+      min_amount: 40000
+      max_amount: 40999.99
+      approval_levels: 1
+      required_approver_role: operations_agent
+      change_reason: Phase 9 maker-checker scenario
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-p9-mc] Agent self approve"
+      categoryCode: wallet
+      subcategoryCode: duplicate_credit
+      priority: medium
+      adjustment_amount: 40500
+  - actor: agent
+    action: claim_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: acknowledge_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: start_review
+    params: { caseId: $caseId }
+  - actor: agent
+    action: request_approval
+    params: { caseId: $caseId }
+  - actor: agent
+    action: approve_case
+    params: { caseId: $caseId }
+    expectError: true
+assertions:
+  - type: error_code
+    actor: agent
+    params: { code: FORBIDDEN }
+  - type: maker_checker_denial
+    actor: agent
+    params: { code: FORBIDDEN }
+  - type: case_status
+    actor: agent
+    params: { caseId: $caseId, status: PENDING_APPROVAL }
+cleanup:
+  caseTitlePrefix: "[sim-p9-mc]"

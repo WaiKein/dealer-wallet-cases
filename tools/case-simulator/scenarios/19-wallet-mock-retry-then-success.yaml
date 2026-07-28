@@ -1,0 +1,36 @@
+name: Wallet mock retry then success
+description: Temporary failure on first attempt, success on second for the same idempotency key
+tags: [wallet, integration]
+actors:
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+actions:
+  - actor: agent
+    action: reset_wallet_mock
+  - actor: agent
+    action: configure_wallet_mock
+    params:
+      scope: idempotencyKey
+      idempotencyKey: sim-wallet-retry-1
+      executeOutcome: TEMPORARY_FAILURE
+      afterAttempts: 2
+      thenExecuteOutcome: SUCCESS
+  - actor: agent
+    action: execute_wallet_adjustment
+    params:
+      idempotencyKey: sim-wallet-retry-1
+      caseId: "00000000-0000-4000-8000-000000000103"
+  - actor: agent
+    action: execute_wallet_adjustment
+    saveAs: walletExecute
+    params:
+      idempotencyKey: sim-wallet-retry-1
+      caseId: "00000000-0000-4000-8000-000000000103"
+assertions:
+  - type: wallet_execute_outcome
+    actor: agent
+    params:
+      outcome: SUCCESS
+      processingCertainty: PROCESSED
+      canScheduleExecuteRetry: false

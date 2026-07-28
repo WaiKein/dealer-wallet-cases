@@ -1,0 +1,41 @@
+name: Timeout confirmed non-processing then safe retry
+description: Uncertain timeout → status inquiry confirms non-processing → safe retry path
+tags: [wallet, integration, phase9]
+actors:
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+setup:
+  titlePrefix: "[sim-p9-to]"
+actions:
+  - actor: agent
+    action: reset_wallet_mock
+  - actor: agent
+    action: configure_wallet_mock
+    params:
+      scope: idempotencyKey
+      idempotencyKey: sim-p9-timeout-001
+      executeOutcome: TIMEOUT_AFTER_POSSIBLE_PROCESSING
+      statusOutcome: STATUS_NOT_FOUND
+  - actor: agent
+    action: execute_wallet_adjustment
+    saveAs: walletExecute
+    params:
+      idempotencyKey: sim-p9-timeout-001
+      caseId: "00000000-0000-4000-8000-000000000140"
+  - actor: agent
+    action: inquire_wallet_status
+    saveAs: walletStatus
+    params:
+      caseId: "00000000-0000-4000-8000-000000000140"
+assertions:
+  - type: wallet_execute_outcome
+    actor: agent
+    params: { outcome: TIMEOUT_AFTER_POSSIBLE_PROCESSING }
+  - type: wallet_status_outcome
+    actor: agent
+    params:
+      outcome: STATUS_NOT_FOUND
+      safeToRetryExecute: true
+cleanup:
+  caseTitlePrefix: "[sim-p9-to]"

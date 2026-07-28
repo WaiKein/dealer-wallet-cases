@@ -47,12 +47,12 @@ export const STATUS_TRANSITIONS: StatusTransition[] = [
   {
     from: "PENDING_APPROVAL",
     to: "APPROVED",
-    allowedRoles: ["approver"],
+    allowedRoles: ["approver", "team_lead", "admin"],
   },
   {
     from: "PENDING_APPROVAL",
     to: "REJECTED",
-    allowedRoles: ["approver"],
+    allowedRoles: ["approver", "team_lead", "admin"],
     requiresComment: true,
   },
   {
@@ -126,7 +126,17 @@ export function canCommentOnCase(role: UserRole): boolean {
     role === "requester" ||
     role === "operations_agent" ||
     role === "approver" ||
-    role === "team_lead"
+    role === "team_lead" ||
+    role === "admin"
+  );
+}
+
+export function canPostInternalComment(role: UserRole): boolean {
+  return (
+    role === "operations_agent" ||
+    role === "team_lead" ||
+    role === "approver" ||
+    role === "admin"
   );
 }
 
@@ -134,6 +144,43 @@ export function canAccessAgentWorkspace(role: UserRole): boolean {
   return (
     role === "operations_agent" ||
     role === "team_lead" ||
+    role === "approver" ||
+    role === "admin"
+  );
+}
+
+export function canAccessExceptionQueues(role: UserRole): boolean {
+  return (
+    role === "operations_agent" ||
+    role === "team_lead" ||
+    role === "admin" ||
     role === "approver"
+  );
+}
+
+export function canManageExceptions(role: UserRole): boolean {
+  return (
+    role === "operations_agent" ||
+    role === "team_lead" ||
+    role === "admin"
+  );
+}
+
+/** Organisation administration console (server-side gate). */
+export function canAccessAdminConsole(role: UserRole): boolean {
+  return role === "admin";
+}
+
+export function canManageConfiguration(role: UserRole): boolean {
+  return role === "admin";
+}
+
+/** Pilot management dashboard (aggregated KPIs). */
+export function canAccessManagementDashboard(role: UserRole): boolean {
+  return (
+    role === "team_lead" ||
+    role === "approver" ||
+    role === "admin" ||
+    role === "operations_agent"
   );
 }

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { addCaseComment } from "@/lib/cases/collaboration";
+import { canPostInternalComment } from "@/lib/auth/permissions";
 import { formatDateTime } from "@/lib/utils";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 import { Button } from "@/components/ui/button";
@@ -16,28 +17,35 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { CaseComment } from "@/types";
+import type { CaseComment, UserRole } from "@/types";
 
 interface CaseCommentsProps {
   caseId: string;
   comments: CaseComment[];
+  viewerRole?: UserRole;
 }
 
-export function CaseComments({ caseId, comments }: CaseCommentsProps) {
+export function CaseComments({ caseId, comments, viewerRole }: CaseCommentsProps) {
   const router = useRouter();
   const [body, setBody] = useState("");
+  const [isInternal, setIsInternal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     startTransition(async () => {
-      const result = await addCaseComment({ caseId, body });
+      const result = await addCaseComment({
+        caseId,
+        body,
+        is_internal: isInternal,
+      });
       if (result.error) {
         setError(result.error);
         return;
       }
       setBody("");
+      setIsInternal(false);
       setError(null);
       router.refresh();
     });
@@ -68,6 +76,11 @@ export function CaseComments({ caseId, comments }: CaseCommentsProps) {
                   <span className="text-xs text-muted-foreground">
                     {formatDateTime(comment.created_at)}
                   </span>
+                  {comment.is_internal ? (
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                      Internal
+                    </span>
+                  ) : null}
                 </div>
                 <p className="text-sm whitespace-pre-wrap">{comment.body}</p>
               </li>
@@ -92,6 +105,17 @@ export function CaseComments({ caseId, comments }: CaseCommentsProps) {
               placeholder="Share an update for the team"
             />
           </div>
+          {viewerRole && canPostInternalComment(viewerRole) ? (
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={isInternal}
+                onChange={(event) => setIsInternal(event.target.checked)}
+                disabled={isPending}
+              />
+              Internal comment (hidden from requester)
+            </label>
+          ) : null}
           <Button type="submit" disabled={isPending || !body.trim()}>
             {isPending ? "Posting..." : "Post comment"}
           </Button>

@@ -1,0 +1,65 @@
+name: Expired delegation denied
+description: Team lead cannot approve with an expired delegation
+tags: [approvals, delegation, security, phase9]
+actors:
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+  - id: approver
+    email: approver@example.com
+    password: Password123!
+  - id: teamlead
+    email: teamlead@example.com
+    password: Password123!
+setup:
+  titlePrefix: "[sim-p9-exp]"
+actions:
+  - actor: approver
+    action: deactivate_my_delegations
+  - actor: approver
+    action: create_delegation
+    params:
+      delegate_id: "44444444-4444-4444-4444-444444444444"
+      approval_limit: 50000
+      effective_from: "2020-01-01T00:00:00.000Z"
+      effective_to: "2020-01-02T00:00:00.000Z"
+      change_reason: Phase 9 expired delegation
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-p9-exp] Expired delegation"
+      categoryCode: wallet
+      subcategoryCode: duplicate_credit
+      priority: medium
+  - actor: agent
+    action: claim_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: acknowledge_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: start_review
+    params: { caseId: $caseId }
+  - actor: agent
+    action: request_approval
+    params: { caseId: $caseId }
+  - actor: teamlead
+    action: approve_case
+    params: { caseId: $caseId }
+    expectError: true
+assertions:
+  - type: error_code
+    actor: teamlead
+    params: { code: FORBIDDEN }
+  - type: delegation_validity
+    actor: teamlead
+    params: { code: FORBIDDEN }
+  - type: case_status
+    actor: agent
+    params: { caseId: $caseId, status: PENDING_APPROVAL }
+cleanup:
+  caseTitlePrefix: "[sim-p9-exp]"

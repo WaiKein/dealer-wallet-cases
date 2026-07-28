@@ -1,0 +1,9 @@
+-- Rollback notes for 20260101000012_approval_runtime (manual / non-prod)
+-- ALTER TABLE public.cases DROP COLUMN IF EXISTS current_approval_request_id;
+-- ALTER TABLE public.cases DROP COLUMN IF EXISTS approval_rule_version;
+-- ALTER TABLE public.cases DROP COLUMN IF EXISTS approval_rule_id;
+-- DROP TABLE IF EXISTS public.approval_delegations;
+-- DROP TABLE IF EXISTS public.approval_steps;
+-- DROP TABLE IF EXISTS public.approval_requests;
+-- DROP TYPE IF EXISTS public.approval_step_status;
+-- DROP TYPE IF EXISTS public.approval_request_status;

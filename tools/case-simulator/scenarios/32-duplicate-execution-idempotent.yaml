@@ -1,0 +1,38 @@
+name: Duplicate wallet execution is idempotent
+description: Same idempotency key returns consistent success without double-processing
+tags: [wallet, idempotency, phase9]
+actors:
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+setup:
+  titlePrefix: "[sim-p9-idem]"
+actions:
+  - actor: agent
+    action: reset_wallet_mock
+  - actor: agent
+    action: configure_wallet_mock
+    params:
+      scope: default
+      executeOutcome: SUCCESS
+  - actor: agent
+    action: execute_wallet_adjustment
+    saveAs: firstExecute
+    params:
+      idempotencyKey: sim-p9-idem-key-001
+      caseId: "00000000-0000-4000-8000-000000000132"
+      requestedAmount: 88
+      approvedAmount: 88
+  - actor: agent
+    action: execute_wallet_adjustment
+    saveAs: secondExecute
+    params:
+      idempotencyKey: sim-p9-idem-key-001
+      caseId: "00000000-0000-4000-8000-000000000132"
+      requestedAmount: 88
+      approvedAmount: 88
+assertions:
+  - type: idempotent_execution
+    actor: agent
+cleanup:
+  caseTitlePrefix: "[sim-p9-idem]"

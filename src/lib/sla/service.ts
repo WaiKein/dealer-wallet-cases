@@ -181,6 +181,7 @@ export async function refreshCaseSlaStates(params: {
           title: "SLA due soon",
           body: `${slaTypeLabel(record.sla_type)} SLA is approaching the deadline.`,
           suffix: record.sla_type,
+          emailEventType: "sla_due_soon",
         });
       }
     }
@@ -199,6 +200,18 @@ export async function refreshCaseSlaStates(params: {
         .eq("id", record.id)
         .is("breach_notified_at", null);
 
+      const { upsertOperationalException } = await import(
+        "@/lib/exceptions/sync"
+      );
+      await upsertOperationalException({
+        organizationId: params.organizationId,
+        queueType: "sla_breached",
+        sourceRef: `case:${params.caseId}:sla:${record.sla_type}`,
+        caseId: params.caseId,
+        title: `${slaTypeLabel(record.sla_type)} SLA breached`,
+        failureCategory: "sla_breach",
+      });
+
       if (params.assignedGroupId) {
         const recipients = await getGroupRecipients(params.assignedGroupId);
         await notifyUsers({
@@ -209,6 +222,7 @@ export async function refreshCaseSlaStates(params: {
           title: "SLA breached",
           body: `${slaTypeLabel(record.sla_type)} SLA has been breached.`,
           suffix: record.sla_type,
+          emailEventType: "sla_breached",
         });
       }
     }

@@ -1,0 +1,68 @@
+name: Approver exceeds approval limit
+description: Approval denied when amount exceeds rule approver_limit
+tags: [approvals, security, phase9]
+actors:
+  - id: admin
+    email: admin@example.com
+    password: Password123!
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+  - id: approver
+    email: approver@example.com
+    password: Password123!
+setup:
+  titlePrefix: "[sim-p9-lim]"
+actions:
+  - actor: admin
+    action: create_approval_rule
+    params:
+      code: sim_low_limit
+      name: Simulator low limit
+      sequence: 3
+      min_amount: 20000
+      max_amount: 29999.99
+      approval_levels: 1
+      required_approver_role: approver
+      approver_limit: 100
+      change_reason: Phase 9 limit scenario
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-p9-lim] Over limit approval"
+      categoryCode: wallet
+      subcategoryCode: duplicate_credit
+      priority: medium
+      adjustment_amount: 25000
+  - actor: agent
+    action: claim_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: acknowledge_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: start_review
+    params: { caseId: $caseId }
+  - actor: agent
+    action: request_approval
+    params: { caseId: $caseId }
+  - actor: approver
+    action: approve_case
+    params: { caseId: $caseId }
+    expectError: true
+assertions:
+  - type: approval_rule_selected
+    actor: agent
+    params: { caseId: $caseId, code: sim_low_limit }
+  - type: error_code
+    actor: approver
+    params: { code: FORBIDDEN }
+  - type: approval_limit_enforcement
+    actor: approver
+    params: { code: FORBIDDEN }
+cleanup:
+  caseTitlePrefix: "[sim-p9-lim]"

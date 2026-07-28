@@ -117,6 +117,25 @@ export async function createCaseRecord(
     return { success: false, error: assignment.error };
   }
 
+  const { data: afterAssign } = await supabase
+    .from("cases")
+    .select("assigned_agent_id, case_number, title")
+    .eq("id", data.id)
+    .maybeSingle();
+
+  if (!afterAssign?.assigned_agent_id) {
+    const { upsertOperationalException } = await import(
+      "@/lib/exceptions/sync"
+    );
+    await upsertOperationalException({
+      organizationId: profile.organization_id,
+      queueType: "unassigned_case",
+      sourceRef: `case:${data.id}:unassigned`,
+      caseId: data.id,
+      title: afterAssign?.title ?? data.case_number ?? "Unassigned case",
+    });
+  }
+
   return {
     success: true,
     data: {

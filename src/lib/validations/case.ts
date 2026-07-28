@@ -58,6 +58,9 @@ export const statusTransitionSchema = z
     resolution_notes: z.string().max(1000, "Notes are too long").optional(),
     /** Optimistic lock; when set, must match cases.version. */
     expectedVersion: z.coerce.number().int().positive().optional(),
+    /** Optimistic lock for approval_requests.version */
+    expectedApprovalVersion: z.coerce.number().int().positive().optional(),
+    approved_amount: z.coerce.number().positive().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.nextStatus === "REJECTED" && !data.rejection_reason?.trim()) {
@@ -92,6 +95,14 @@ export const caseListFilterSchema = z.object({
     ])
     .optional(),
   search: z.string().max(100).optional(),
+  viewId: z.string().uuid().optional(),
+  priority: z.enum(casePriorities).optional(),
+  categoryId: z.string().uuid().optional(),
+  subcategoryId: z.string().uuid().optional(),
+  assignedGroupId: z.string().uuid().optional(),
+  assignedAgentId: z.string().uuid().optional(),
+  accountId: z.string().max(64).optional(),
+  referenceId: z.string().max(64).optional(),
 });
 
 export type CaseListFilterInput = z.infer<typeof caseListFilterSchema>;
@@ -113,6 +124,7 @@ export const addCommentSchema = z.object({
     .string()
     .min(1, "Comment cannot be empty")
     .max(2000, "Comment is too long"),
+  is_internal: z.boolean().optional().default(false),
 });
 
 export type AddCommentInput = z.infer<typeof addCommentSchema>;

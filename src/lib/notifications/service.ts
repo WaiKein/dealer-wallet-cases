@@ -53,28 +53,22 @@ export async function createNotification(params: {
 
 export async function notifyUsers(params: {
   organizationId: string;
-  recipients: { id: string; role: UserRole }[];
+  recipients: { id: string; role: UserRole; email?: string | null }[];
   caseId: string;
   type: NotificationType;
   title: string;
   body: string;
   suffix?: string;
-  /** When true, insert inline (job worker). Default enqueues a background job. */
+  emailEventType?: string;
+  variables?: Record<string, string>;
+  /** When true, dispatch inline (job worker). Default enqueues a background job. */
   inline?: boolean;
 }): Promise<void> {
   if (params.inline) {
-    for (const recipient of params.recipients) {
-      await createNotification({
-        organizationId: params.organizationId,
-        userId: recipient.id,
-        userRole: recipient.role,
-        caseId: params.caseId,
-        type: params.type,
-        title: params.title,
-        body: params.body,
-        suffix: params.suffix,
-      });
-    }
+    const { dispatchNotificationChannels } = await import(
+      "@/lib/notifications/dispatch"
+    );
+    await dispatchNotificationChannels(params);
     return;
   }
 

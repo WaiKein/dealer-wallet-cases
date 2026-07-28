@@ -1,0 +1,64 @@
+name: Concurrent integration workers drain safely
+description: Multiple job drains after approval leave a single SUCCEEDED execution
+tags: [wallet, integration, reliability, phase9]
+actors:
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+  - id: approver
+    email: approver@example.com
+    password: Password123!
+setup:
+  titlePrefix: "[sim-p9-cw]"
+actions:
+  - actor: agent
+    action: reset_wallet_mock
+  - actor: agent
+    action: configure_wallet_mock
+    params:
+      scope: default
+      executeOutcome: SUCCESS
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-p9-cw] Concurrent workers"
+      categoryCode: wallet
+      subcategoryCode: duplicate_credit
+      priority: medium
+  - actor: agent
+    action: claim_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: acknowledge_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: start_review
+    params: { caseId: $caseId }
+  - actor: agent
+    action: request_approval
+    params: { caseId: $caseId }
+  - actor: approver
+    action: approve_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: run_integration_worker
+    params: { limit: 20 }
+  - actor: agent
+    action: run_integration_worker
+    params: { limit: 20 }
+  - actor: agent
+    action: drain_jobs
+    params: { limit: 20 }
+assertions:
+  - type: execution_record_state
+    actor: agent
+    params: { caseId: $caseId, status: SUCCEEDED }
+  - type: integration_attempt_count
+    actor: agent
+    params: { caseId: $caseId, min: 1 }
+cleanup:
+  caseTitlePrefix: "[sim-p9-cw]"

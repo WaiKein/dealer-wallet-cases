@@ -5,11 +5,15 @@ import { backoffMs, type BackgroundJob } from "@/lib/jobs/enqueue";
 import { handleSlaRefreshJob } from "@/lib/jobs/handlers/sla-refresh";
 import { handleNotificationDispatchJob } from "@/lib/jobs/handlers/notification-dispatch";
 import { handleFailOnceJob } from "@/lib/jobs/handlers/fail-once";
+import { handleIntegrationExecuteJob } from "@/lib/jobs/handlers/integration-execute";
+import { handleIntegrationStatusInquiryJob } from "@/lib/jobs/handlers/integration-status";
 
 /**
  * System job handlers (documented auth bypass):
  * - sla.refresh_case: evaluates SLA state for a case; org-scoped payload
  * - notification.dispatch: inserts in-app notifications; org-scoped payload
+ * - integration.execute_wallet: calls wallet provider; updates execution tables only
+ * - integration.inquire_wallet_status: status inquiry; updates execution tables only
  * - jobs.fail_once: test-only controlled failure for retry/DLQ scenarios
  *
  * Handlers must not change case workflow status. They run with service-role
@@ -104,6 +108,23 @@ export async function processClaimedJobs(
         .eq("job_id", job.id)
         .eq("attempt_no", attemptNo);
 
+      if (dead) {
+        const { upsertOperationalException } = await import(
+          "@/lib/exceptions/sync"
+        );
+        const caseId =
+          typeof job.payload.caseId === "string" ? job.payload.caseId : null;
+        await upsertOperationalException({
+          organizationId: job.organization_id,
+          queueType: "dead_letter_job",
+          sourceRef: `job:${job.id}:dead_letter`,
+          caseId,
+          jobId: job.id,
+          title: `Dead-letter job ${job.job_type}`,
+          failureCategory: "dead_letter",
+        });
+      }
+
       failed += 1;
     }
   }
@@ -129,6 +150,12 @@ async function dispatchJob(job: BackgroundJob): Promise<void> {
       return;
     case "notification.dispatch":
       await handleNotificationDispatchJob(job);
+      return;
+    case "integration.execute_wallet":
+      await handleIntegrationExecuteJob(job);
+      return;
+    case "integration.inquire_wallet_status":
+      await handleIntegrationStatusInquiryJob(job);
       return;
     case "jobs.fail_once":
       await handleFailOnceJob(job);

@@ -17,6 +17,8 @@ interface StatusActionButtonsProps {
   role: UserRole;
   /** Optimistic lock token from cases.version */
   version: number;
+  /** Optimistic lock token from approval_requests.version */
+  approvalVersion?: number;
 }
 
 export function StatusActionButtons({
@@ -24,6 +26,7 @@ export function StatusActionButtons({
   currentStatus,
   role,
   version,
+  approvalVersion,
 }: StatusActionButtonsProps) {
   const router = useRouter();
   const transitions = getAvailableTransitions(currentStatus, role);
@@ -78,6 +81,7 @@ export function StatusActionButtons({
         rejection_reason: rejectionReason || undefined,
         resolution_notes: resolutionNotes || undefined,
         expectedVersion: version,
+        expectedApprovalVersion: approvalVersion,
       });
 
       if (result.error) {

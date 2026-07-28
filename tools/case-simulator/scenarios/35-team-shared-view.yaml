@@ -1,0 +1,37 @@
+name: Team-shared saved view access
+description: Team member can create and load a team-scoped saved view
+tags: [views, phase9]
+actors:
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+  - id: teamlead
+    email: teamlead@example.com
+    password: Password123!
+setup:
+  titlePrefix: "[sim-p9-tv]"
+actions:
+  - actor: agent
+    action: create_saved_view
+    saveAs: viewId
+    params:
+      name: "[sim-p9-tv] Team high priority"
+      sharingScope: team
+      teamId: "a1000000-0000-0000-0000-000000000001"
+      filters:
+        priorities: [high, critical]
+        openOnly: true
+  - actor: teamlead
+    action: load_saved_view
+    params: { viewId: $viewId }
+assertions:
+  - type: saved_view_access
+    actor: teamlead
+    params: { viewId: $viewId, allowed: true }
+  - type: saved_view_exists
+    actor: agent
+    params:
+      name: "[sim-p9-tv] Team high priority"
+      sharingScope: team
+cleanup:
+  caseTitlePrefix: "[sim-p9-tv]"

@@ -1,0 +1,49 @@
+name: Saved case views list and personal create
+description: System views are listed; agent can create a personal view and apply it
+tags: [views, cases]
+actors:
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+setup:
+  titlePrefix: "[sim-views]"
+actions:
+  - actor: agent
+    action: list_saved_views
+  - actor: agent
+    action: create_saved_view
+    saveAs: viewId
+    params:
+      name: "[sim-views] High priority personal"
+      sharingScope: personal
+      filters:
+        priorities: [high, critical]
+        openOnly: true
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-views] High priority case"
+      categoryCode: wallet
+      subcategoryCode: duplicate_credit
+      priority: high
+  - actor: agent
+    action: list_cases
+    params:
+      viewId: $viewId
+assertions:
+  - type: saved_view_exists
+    actor: agent
+    params:
+      code: my_open
+      sharingScope: system
+  - type: saved_view_exists
+    actor: agent
+    params:
+      name: "[sim-views] High priority personal"
+      sharingScope: personal
+cleanup:
+  caseTitlePrefix: "[sim-views]"

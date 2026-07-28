@@ -1,0 +1,49 @@
+name: Requester self-approval denied
+description: Requester cannot approve their own case (maker-checker)
+tags: [approvals, security, phase9]
+actors:
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+setup:
+  titlePrefix: "[sim-p9-self]"
+actions:
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-p9-self] Self approval attempt"
+      categoryCode: wallet
+      subcategoryCode: duplicate_credit
+      priority: medium
+  - actor: agent
+    action: claim_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: acknowledge_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: start_review
+    params: { caseId: $caseId }
+  - actor: agent
+    action: request_approval
+    params: { caseId: $caseId }
+  - actor: requester
+    action: approve_case
+    params: { caseId: $caseId }
+    expectError: true
+assertions:
+  - type: error_code
+    actor: requester
+    params: { code: FORBIDDEN }
+  - type: case_status
+    actor: agent
+    params: { caseId: $caseId, status: PENDING_APPROVAL }
+  - type: maker_checker_denial
+    actor: requester
+    params: { code: FORBIDDEN }
+cleanup:
+  caseTitlePrefix: "[sim-p9-self]"

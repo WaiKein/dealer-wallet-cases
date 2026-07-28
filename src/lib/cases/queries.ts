@@ -1,7 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { canViewAllCases } from "@/lib/auth/permissions";
 import { enqueueSlaRefresh } from "@/lib/jobs/domain-enqueue";
+import {
+  mergeListFilters,
+  type SavedCaseView,
+} from "@/lib/cases/saved-views-access";
+import { getSavedCaseView } from "@/lib/cases/saved-views";
+import type { SavedViewFilters, SavedViewSorting } from "@/lib/cases/saved-view-schema";
 import type { CaseListFilterInput } from "@/lib/validations/case";
+import { maskCaseFinancialFields } from "@/lib/security/masking";
 import type {
   AssignmentGroup,
   AssignmentGroupMember,
@@ -22,45 +29,186 @@ const CASE_SELECT = `
   assigned_group:assignment_groups!cases_assigned_group_id_fkey(id, name, code),
   category:categories!cases_category_id_fkey(id, name, code),
   subcategory:subcategories!cases_subcategory_id_fkey(id, name, code),
-  approver:profiles!cases_approver_id_fkey(id, full_name, email)
+  approver:profiles!cases_approver_id_fkey(id, full_name, email),
+  current_execution:case_integration_executions!cases_current_integration_execution_id_fkey(id, status)
 `;
+
+const OPEN_STATUSES: CaseStatus[] = [
+  "SUBMITTED",
+  "UNDER_REVIEW",
+  "WAITING_FOR_REQUESTER",
+  "WAITING_FOR_EXTERNAL_PARTY",
+  "PENDING_APPROVAL",
+  "APPROVED",
+];
+
+function sortCases(
+  cases: CaseWithRelations[],
+  sorting?: SavedViewSorting
+): CaseWithRelations[] {
+  const field = sorting?.field ?? "updated_at";
+  const dir = sorting?.direction === "asc" ? 1 : -1;
+  const priorityRank: Record<string, number> = {
+    low: 1,
+    medium: 2,
+    high: 3,
+    critical: 4,
+  };
+  return [...cases].sort((a, b) => {
+    let av: string | number = "";
+    let bv: string | number = "";
+    if (field === "priority") {
+      av = priorityRank[a.priority] ?? 0;
+      bv = priorityRank[b.priority] ?? 0;
+    } else if (field === "adjustment_amount") {
+      av = Number(a.adjustment_amount);
+      bv = Number(b.adjustment_amount);
+    } else if (field === "case_number" || field === "title" || field === "status") {
+      av = String(a[field] ?? "");
+      bv = String(b[field] ?? "");
+    } else {
+      av = String(a[field as "created_at" | "updated_at"] ?? "");
+      bv = String(b[field as "created_at" | "updated_at"] ?? "");
+    }
+    if (av < bv) return -1 * dir;
+    if (av > bv) return 1 * dir;
+    return 0;
+  });
+}
 
 export async function listCases(
   profile: Profile,
   filters: CaseListFilterInput = {}
-): Promise<{ data: CaseWithRelations[]; error: string | null }> {
+): Promise<{
+  data: CaseWithRelations[];
+  error: string | null;
+  view?: SavedCaseView | null;
+}> {
+  let view: SavedCaseView | null = null;
+  let viewFilters: SavedViewFilters = {};
+  let sorting: SavedViewSorting | undefined;
+
+  if (filters.viewId) {
+    const loaded = await getSavedCaseView(profile, filters.viewId);
+    if (loaded.error || !loaded.data) {
+      return {
+        data: [],
+        error: loaded.error ?? "Saved view not found.",
+        view: null,
+      };
+    }
+    view = loaded.data;
+    viewFilters = loaded.data.filters;
+    sorting = loaded.data.sorting;
+  }
+
+  const applied = mergeListFilters({
+    viewFilters,
+    overrides: {
+      status: filters.status,
+      search: filters.search,
+      priority: filters.priority,
+      categoryId: filters.categoryId,
+      subcategoryId: filters.subcategoryId,
+      assignedGroupId: filters.assignedGroupId,
+      assignedAgentId: filters.assignedAgentId,
+      accountId: filters.accountId,
+      referenceId: filters.referenceId,
+    },
+  });
+
   const supabase = await createClient();
-  let query = supabase
-    .from("cases")
-    .select(CASE_SELECT)
-    .order("created_at", { ascending: false });
+  let query = supabase.from("cases").select(CASE_SELECT);
 
   if (profile.organization_id) {
     query = query.eq("organization_id", profile.organization_id);
   }
 
+  // Always enforce requester scoping — saved views cannot bypass this.
   if (!canViewAllCases(profile.role)) {
     query = query.eq("requester_id", profile.id);
   }
 
-  if (filters.status) {
-    query = query.eq("status", filters.status);
+  const statuses =
+    applied.statuses ??
+    (applied.status ? [applied.status] : undefined) ??
+    (applied.openOnly ? OPEN_STATUSES : undefined) ??
+    (applied.pendingMyApproval ? (["PENDING_APPROVAL"] as CaseStatus[]) : undefined);
+
+  if (statuses?.length === 1) {
+    query = query.eq("status", statuses[0]);
+  } else if (statuses && statuses.length > 1) {
+    query = query.in("status", statuses);
   }
 
-  if (filters.search?.trim()) {
-    const term = filters.search.trim();
+  const priorities =
+    applied.priorities ??
+    (applied.priority ? [applied.priority] : undefined);
+  if (priorities?.length === 1) {
+    query = query.eq("priority", priorities[0]);
+  } else if (priorities && priorities.length > 1) {
+    query = query.in("priority", priorities);
+  }
+
+  if (applied.categoryId) query = query.eq("category_id", applied.categoryId);
+  if (applied.subcategoryId) {
+    query = query.eq("subcategory_id", applied.subcategoryId);
+  }
+  if (applied.assignedGroupId) {
+    query = query.eq("assigned_group_id", applied.assignedGroupId);
+  }
+  if (applied.assignedAgentId) {
+    query = query.eq("assigned_agent_id", applied.assignedAgentId);
+  }
+  if (applied.requesterId && canViewAllCases(profile.role)) {
+    query = query.eq("requester_id", applied.requesterId);
+  }
+  if (applied.assignedToMe) {
+    query = query.eq("assigned_agent_id", profile.id);
+  }
+  if (applied.accountId?.trim()) {
+    query = query.ilike("dealer_id", `%${applied.accountId.trim()}%`);
+  }
+  if (applied.referenceId?.trim()) {
+    query = query.ilike("wallet_id", `%${applied.referenceId.trim()}%`);
+  }
+  if (applied.amountMin != null) {
+    query = query.gte("adjustment_amount", applied.amountMin);
+  }
+  if (applied.amountMax != null) {
+    query = query.lte("adjustment_amount", applied.amountMax);
+  }
+  if (applied.createdFrom) query = query.gte("created_at", applied.createdFrom);
+  if (applied.createdTo) query = query.lte("created_at", applied.createdTo);
+  if (applied.updatedFrom) query = query.gte("updated_at", applied.updatedFrom);
+  if (applied.updatedTo) query = query.lte("updated_at", applied.updatedTo);
+  if (applied.updatedWithinHours) {
+    const since = new Date(
+      Date.now() - applied.updatedWithinHours * 3600 * 1000
+    ).toISOString();
+    query = query.gte("updated_at", since);
+  }
+
+  if (applied.search?.trim()) {
+    const term = applied.search.trim();
     query = query.or(
       `case_number.ilike.%${term}%,title.ilike.%${term}%,dealer_id.ilike.%${term}%,wallet_id.ilike.%${term}%`
     );
   }
 
+  const pageSize = view?.page_size ?? 100;
+  query = query.limit(Math.min(pageSize, 200));
+
   const { data, error } = await query;
 
   if (error) {
-    return { data: [], error: error.message };
+    return { data: [], error: error.message, view };
   }
 
-  const cases = (data ?? []) as CaseWithRelations[];
+  let cases = (data ?? []) as (CaseWithRelations & {
+    current_execution?: { id: string; status: string } | null;
+  })[];
+
   const ids = cases.map((item) => item.id);
 
   if (ids.length > 0) {
@@ -81,7 +229,60 @@ export async function listCases(
     }
   }
 
-  return { data: cases, error: null };
+  if (applied.unassignedInMyTeams) {
+    const groupIds = await getMyGroupIds(profile.id);
+    cases = cases.filter(
+      (item) =>
+        Boolean(item.assigned_group_id) &&
+        groupIds.includes(item.assigned_group_id!) &&
+        !item.assigned_agent_id &&
+        item.status !== "RESOLVED" &&
+        item.status !== "REJECTED"
+    );
+  }
+
+  if (applied.slaStatuses?.length) {
+    cases = cases.filter((item) =>
+      (item.sla_records ?? []).some((sla) =>
+        applied.slaStatuses!.includes(sla.state as never)
+      )
+    );
+  }
+
+  if (applied.executionStatuses?.length) {
+    cases = cases.filter((item) => {
+      const status = item.current_execution?.status;
+      return status && applied.executionStatuses!.includes(status as never);
+    });
+  }
+
+  if (applied.approvalStatuses?.length) {
+    const map: Record<string, string> = {
+      PENDING_APPROVAL: "PENDING",
+      APPROVED: "APPROVED",
+      REJECTED: "REJECTED",
+    };
+    cases = cases.filter((item) => {
+      const mapped = map[item.status];
+      return mapped && applied.approvalStatuses!.includes(mapped as never);
+    });
+  }
+
+  if (applied.exceptionStatuses?.length && ids.length > 0) {
+    const { data: exceptions } = await supabase
+      .from("operational_exceptions")
+      .select("case_id, status")
+      .in("case_id", ids)
+      .in("status", applied.exceptionStatuses);
+    const matched = new Set(
+      (exceptions ?? []).map((row) => row.case_id as string)
+    );
+    cases = cases.filter((item) => matched.has(item.id));
+  }
+
+  cases = sortCases(cases, sorting);
+
+  return { data: cases, error: null, view };
 }
 
 export async function listCategories(organizationId: string): Promise<{
@@ -306,14 +507,22 @@ export async function getCaseById(
       case_id: comment.case_id,
       author_id: comment.author_id,
       body: comment.body,
+      is_internal: Boolean(
+        (comment as { is_internal?: boolean }).is_internal
+      ),
       created_at: comment.created_at,
       author: author ?? undefined,
     };
   });
 
+  const maskedCase = maskCaseFinancialFields(
+    caseData as CaseWithRelations,
+    profile
+  );
+
   return {
     data: {
-      ...(caseData as CaseWithRelations),
+      ...maskedCase,
       audit_history: auditHistory ?? [],
       comments: normalizedComments,
       attachments: attachmentsWithUrls,

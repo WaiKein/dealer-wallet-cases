@@ -2,7 +2,8 @@ export type UserRole =
   | "requester"
   | "operations_agent"
   | "approver"
-  | "team_lead";
+  | "team_lead"
+  | "admin";
 
 export type CaseStatus =
   | "SUBMITTED"
@@ -40,7 +41,8 @@ export type AuditEventType =
   | "sla_completed"
   | "sla_paused"
   | "sla_resumed"
-  | "case_reopened";
+  | "case_reopened"
+  | "exception_action";
 
 export type NotificationType =
   | "case_assignment"
@@ -50,12 +52,24 @@ export type NotificationType =
   | "sla_due_soon"
   | "sla_breach"
   | "case_resolution"
-  | "case_reopening";
+  | "case_reopening"
+  | "integration_execution";
 
-export interface Organization {
+export interface ConfigMetadata {
+  version?: number;
+  effective_from?: string;
+  effective_to?: string | null;
+  created_by?: string | null;
+  updated_by?: string | null;
+  change_reason?: string | null;
+  updated_at?: string;
+}
+
+export interface Organization extends ConfigMetadata {
   id: string;
   name: string;
   lead_authorization_mode: LeadAuthorizationMode;
+  is_active?: boolean;
   created_at: string;
 }
 
@@ -65,10 +79,14 @@ export interface Profile {
   full_name: string;
   role: UserRole;
   organization_id: string | null;
+  is_active?: boolean;
   created_at: string;
+  updated_at?: string;
+  updated_by?: string | null;
+  change_reason?: string | null;
 }
 
-export interface Category {
+export interface Category extends ConfigMetadata {
   id: string;
   organization_id: string;
   code: string;
@@ -77,7 +95,7 @@ export interface Category {
   created_at: string;
 }
 
-export interface Subcategory {
+export interface Subcategory extends ConfigMetadata {
   id: string;
   organization_id: string;
   category_id: string;
@@ -87,7 +105,7 @@ export interface Subcategory {
   created_at: string;
 }
 
-export interface AssignmentGroup {
+export interface AssignmentGroup extends ConfigMetadata {
   id: string;
   organization_id: string;
   code: string;
@@ -97,16 +115,17 @@ export interface AssignmentGroup {
   created_at: string;
 }
 
-export interface AssignmentGroupMember {
+export interface AssignmentGroupMember extends ConfigMetadata {
   id: string;
   group_id: string;
   user_id: string;
   is_lead: boolean;
+  is_active?: boolean;
   created_at: string;
   profile?: Pick<Profile, "id" | "full_name" | "email" | "role">;
 }
 
-export interface AssignmentRule {
+export interface AssignmentRule extends ConfigMetadata {
   id: string;
   organization_id: string;
   sequence: number;
@@ -118,12 +137,76 @@ export interface AssignmentRule {
   created_at: string;
 }
 
-export interface SlaDefinition {
+export interface SlaDefinition extends ConfigMetadata {
   id: string;
   organization_id: string;
   priority: CasePriority;
   sla_type: SlaType;
   duration_minutes: number;
+  is_active?: boolean;
+  created_at: string;
+}
+
+export interface ApprovalRule extends ConfigMetadata {
+  id: string;
+  organization_id: string;
+  code: string;
+  name: string;
+  sequence: number;
+  case_type: string | null;
+  category_id: string | null;
+  subcategory_id: string | null;
+  min_amount: number | null;
+  max_amount: number | null;
+  priority: CasePriority | null;
+  requester_role: UserRole | null;
+  requester_team_id: string | null;
+  assignment_group_id: string | null;
+  risk_level: string | null;
+  required_approver_role: UserRole | null;
+  required_approver_team_id: string | null;
+  approval_levels: number;
+  sequential_required: boolean;
+  approver_limit: number | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface NotificationTemplate extends ConfigMetadata {
+  id: string;
+  organization_id: string;
+  code: string;
+  name: string;
+  channel: string;
+  event_type: string;
+  subject_template: string | null;
+  body_template: string;
+  variables: string[];
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface FeatureFlag extends ConfigMetadata {
+  id: string;
+  organization_id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  is_enabled: boolean;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface ConfigurationAuditEntry {
+  id: string;
+  organization_id: string;
+  configuration_type: string;
+  configuration_id: string;
+  previous_value: Record<string, unknown> | null;
+  new_value: Record<string, unknown> | null;
+  actor_id: string;
+  change_reason: string | null;
+  correlation_id: string | null;
   created_at: string;
 }
 
@@ -188,6 +271,7 @@ export interface CaseComment {
   case_id: string;
   author_id: string;
   body: string;
+  is_internal?: boolean;
   created_at: string;
   author?: Pick<Profile, "id" | "full_name" | "email" | "role">;
 }

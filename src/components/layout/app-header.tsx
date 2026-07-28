@@ -2,7 +2,12 @@ import { NotificationBell } from "@/components/layout/notification-bell";
 import { signOut } from "@/lib/auth/actions";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { ROLE_LABELS } from "@/lib/auth/roles";
-import { canAccessAgentWorkspace } from "@/lib/auth/permissions";
+import {
+  canAccessAdminConsole,
+  canAccessAgentWorkspace,
+  canAccessExceptionQueues,
+  canAccessManagementDashboard,
+} from "@/lib/auth/permissions";
 import { isTestControlEnabled } from "@/lib/clock";
 import {
   countUnreadNotifications,
@@ -31,6 +36,14 @@ export async function AppHeader() {
             <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">
               Dashboard
             </Link>
+            {profile && canAccessManagementDashboard(profile.role) && (
+              <Link
+                href="/dashboard/management"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Management
+              </Link>
+            )}
             <Link href="/cases" className="text-muted-foreground hover:text-foreground">
               Cases
             </Link>
@@ -42,12 +55,37 @@ export async function AppHeader() {
                 Workspace
               </Link>
             )}
+            {profile && canAccessExceptionQueues(profile.role) && (
+              <Link
+                href="/operations/exceptions"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Exceptions
+              </Link>
+            )}
             {profile && canAccessAgentWorkspace(profile.role) && (
               <Link
                 href="/assignment-groups"
                 className="text-muted-foreground hover:text-foreground"
               >
                 Assignment groups
+              </Link>
+            )}
+            {profile && canAccessAdminConsole(profile.role) && (
+              <Link
+                href="/admin"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Admin
+              </Link>
+            )}
+            {profile &&
+              (profile.role === "approver" || profile.role === "admin") && (
+              <Link
+                href="/delegations"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Delegations
               </Link>
             )}
             {profile?.role === "requester" && (

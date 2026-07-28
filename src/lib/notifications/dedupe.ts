@@ -8,6 +8,7 @@ export const OPERATIONAL_NOTIFICATION_TYPES: NotificationType[] = [
   "approval_decision",
   "sla_due_soon",
   "sla_breach",
+  "integration_execution",
 ];
 
 export const REQUESTER_VISIBLE_NOTIFICATION_TYPES: NotificationType[] = [

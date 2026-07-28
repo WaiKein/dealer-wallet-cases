@@ -1,0 +1,24 @@
+-- Rollback for 20260101000009–011 admin console (manual / non-prod)
+-- DROP POLICY IF EXISTS "Admins update org profiles" ON public.profiles;
+-- DROP POLICY IF EXISTS "Admins view org profiles" ON public.profiles;
+-- DROP POLICY IF EXISTS "Admins manage sla definitions" ON public.sla_definitions;
+-- DROP POLICY IF EXISTS "Admins manage assignment rules" ON public.assignment_rules;
+-- DROP POLICY IF EXISTS "Admins manage assignment group members" ON public.assignment_group_members;
+-- DROP POLICY IF EXISTS "Admins manage assignment groups" ON public.assignment_groups;
+-- DROP POLICY IF EXISTS "Admins manage subcategories" ON public.subcategories;
+-- DROP POLICY IF EXISTS "Admins manage categories" ON public.categories;
+-- DROP POLICY IF EXISTS "Admins manage organizations" ON public.organizations;
+-- DROP POLICY IF EXISTS "Admins manage approval rules" ON public.approval_rules;
+-- DROP POLICY IF EXISTS "Users view org approval rules" ON public.approval_rules;
+-- DROP TABLE IF EXISTS public.approval_rules;
+-- DROP POLICY IF EXISTS "Admins manage notification templates" ON public.notification_templates;
+-- DROP POLICY IF EXISTS "Users view org notification templates" ON public.notification_templates;
+-- DROP TABLE IF EXISTS public.notification_templates;
+-- DROP POLICY IF EXISTS "Admins manage feature flags" ON public.feature_flags;
+-- DROP POLICY IF EXISTS "Users view org feature flags" ON public.feature_flags;
+-- DROP TABLE IF EXISTS public.feature_flags;
+-- DROP POLICY IF EXISTS "Admins insert configuration audit" ON public.configuration_audit;
+-- DROP POLICY IF EXISTS "Users view org configuration audit" ON public.configuration_audit;
+-- DROP TABLE IF EXISTS public.configuration_audit;
+-- Note: user_role 'admin' enum value cannot be removed safely in Postgres.
+-- Note: added config metadata columns on existing tables are left in place (additive).

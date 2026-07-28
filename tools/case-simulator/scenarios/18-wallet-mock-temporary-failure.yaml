@@ -1,0 +1,30 @@
+name: Wallet mock temporary failure
+description: Temporary provider failure is retryable without status inquiry
+tags: [wallet, integration]
+actors:
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+actions:
+  - actor: agent
+    action: reset_wallet_mock
+  - actor: agent
+    action: configure_wallet_mock
+    params:
+      scope: idempotencyKey
+      idempotencyKey: sim-wallet-temp-1
+      executeOutcome: TEMPORARY_FAILURE
+  - actor: agent
+    action: execute_wallet_adjustment
+    saveAs: walletExecute
+    params:
+      idempotencyKey: sim-wallet-temp-1
+      caseId: "00000000-0000-4000-8000-000000000102"
+assertions:
+  - type: wallet_execute_outcome
+    actor: agent
+    params:
+      outcome: TEMPORARY_FAILURE
+      processingCertainty: NOT_PROCESSED
+      requiresStatusInquiry: false
+      canScheduleExecuteRetry: true

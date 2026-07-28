@@ -11,14 +11,29 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const status = url.searchParams.get("status") ?? undefined;
     const search = url.searchParams.get("search") ?? undefined;
+    const viewId = url.searchParams.get("viewId") ?? undefined;
+    const priority = url.searchParams.get("priority") ?? undefined;
     const result = await listCases(profile, {
       status: status as never,
       search,
+      viewId,
+      priority: priority as never,
+      categoryId: url.searchParams.get("categoryId") ?? undefined,
+      subcategoryId: url.searchParams.get("subcategoryId") ?? undefined,
+      assignedGroupId: url.searchParams.get("assignedGroupId") ?? undefined,
+      assignedAgentId: url.searchParams.get("assignedAgentId") ?? undefined,
+      accountId: url.searchParams.get("accountId") ?? undefined,
+      referenceId: url.searchParams.get("referenceId") ?? undefined,
     });
     if (result.error) {
-      return apiError({ code: "VALIDATION_ERROR", message: result.error });
+      return apiError({
+        code: result.error.toLowerCase().includes("not found")
+          ? "NOT_FOUND"
+          : "VALIDATION_ERROR",
+        message: result.error,
+      });
     }
-    return jsonOk({ cases: result.data });
+    return jsonOk({ cases: result.data, view: result.view ?? null });
   });
 }
 

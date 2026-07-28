@@ -1,0 +1,69 @@
+name: Resolve operational exception
+description: Failed integration exception can be resolved by ops
+tags: [exceptions, phase9]
+actors:
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+  - id: approver
+    email: approver@example.com
+    password: Password123!
+setup:
+  titlePrefix: "[sim-p9-rexc]"
+actions:
+  - actor: agent
+    action: reset_wallet_mock
+  - actor: agent
+    action: advance_mock_provider_state
+    params:
+      scope: default
+      executeOutcome: PERMANENT_FAILURE
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-p9-rexc] Resolve exception"
+      categoryCode: wallet
+      subcategoryCode: duplicate_credit
+      priority: medium
+  - actor: agent
+    action: claim_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: acknowledge_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: start_review
+    params: { caseId: $caseId }
+  - actor: agent
+    action: request_approval
+    params: { caseId: $caseId }
+  - actor: approver
+    action: approve_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: drain_jobs
+    params: { limit: 20 }
+  - actor: agent
+    action: drain_jobs
+    params: { limit: 20 }
+  - actor: agent
+    action: list_exceptions
+    saveAs: exceptionId
+    params:
+      caseId: $caseId
+      queueType: integration_failed_final
+  - actor: agent
+    action: resolve_operational_exception
+    params:
+      exceptionId: $exceptionId
+      resolutionNote: Closed after ops review in simulator
+assertions:
+  - type: execution_record_state
+    actor: agent
+    params: { caseId: $caseId, status: FAILED_FINAL }
+cleanup:
+  caseTitlePrefix: "[sim-p9-rexc]"

@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { STATUS_LABELS } from "@/lib/auth/roles";
+import { canAccessManagementDashboard } from "@/lib/auth/permissions";
 import { requireProfile } from "@/lib/auth/session";
 import { getDashboardStats } from "@/lib/cases/queries";
 import type { CaseStatus } from "@/types";
@@ -47,9 +48,16 @@ export default async function DashboardPage() {
             Snapshot of case volume and workflow status.
           </p>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/cases">View all cases</Link>
-        </Button>
+        <div className="flex gap-2">
+          {canAccessManagementDashboard(profile.role) && (
+            <Button asChild variant="outline">
+              <Link href="/dashboard/management">Management KPIs</Link>
+            </Button>
+          )}
+          <Button asChild variant="outline">
+            <Link href="/cases">View all cases</Link>
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">

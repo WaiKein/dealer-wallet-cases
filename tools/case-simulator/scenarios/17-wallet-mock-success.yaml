@@ -1,0 +1,31 @@
+name: Wallet mock API success
+description: Configure mock provider and execute a successful wallet adjustment via test-control
+tags: [wallet, integration, smoke]
+actors:
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+actions:
+  - actor: agent
+    action: reset_wallet_mock
+  - actor: agent
+    action: configure_wallet_mock
+    params:
+      scope: default
+      executeOutcome: SUCCESS
+  - actor: agent
+    action: execute_wallet_adjustment
+    saveAs: walletExecute
+    params:
+      idempotencyKey: sim-wallet-success-1
+      caseId: "00000000-0000-4000-8000-000000000101"
+      requestedAmount: 100
+      approvedAmount: 100
+assertions:
+  - type: wallet_execute_outcome
+    actor: agent
+    params:
+      outcome: SUCCESS
+      processingCertainty: PROCESSED
+      requiresStatusInquiry: false
+      canScheduleExecuteRetry: false

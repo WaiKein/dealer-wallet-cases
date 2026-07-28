@@ -1,6 +1,10 @@
 import { apiError, jsonOk } from "@/lib/api/response";
 import { withActor } from "@/lib/api/with-actor";
-import { canCommentOnCase } from "@/lib/auth/permissions";
+import { assertCaseAccess } from "@/lib/cases/access";
+import {
+  canCommentOnCase,
+  canPostInternalComment,
+} from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { addCommentSchema } from "@/lib/validations/case";
 
@@ -21,6 +25,7 @@ export async function POST(
     const parsed = addCommentSchema.safeParse({
       caseId: id,
       body: body?.body,
+      is_internal: body?.is_internal,
     });
     if (!parsed.success) {
       return apiError({
@@ -29,24 +34,47 @@ export async function POST(
       });
     }
 
-    const supabase = await createClient();
-    const { data: existingCase, error: fetchError } = await supabase
-      .from("cases")
-      .select("id")
-      .eq("id", id)
-      .single();
+    if (parsed.data.is_internal && !canPostInternalComment(profile.role)) {
+      return apiError({
+        code: "FORBIDDEN",
+        message: "You cannot post internal comments.",
+      });
+    }
 
-    if (fetchError || !existingCase) {
-      return apiError({ code: "NOT_FOUND", message: "Case not found." });
+    const supabase = await createClient();
+    const { data: existingCase } = await supabase
+      .from("cases")
+      .select(
+        "id, organization_id, requester_id, assigned_agent_id, assigned_group_id, status, approver_id"
+      )
+      .eq("id", id)
+      .maybeSingle();
+
+    const access = await assertCaseAccess(profile, existingCase);
+    if (!access.success) {
+      return apiError({
+        code: (access.code as never) ?? "NOT_FOUND",
+        message: access.error ?? "Case not found.",
+      });
+    }
+
+    const insertRow: {
+      case_id: string;
+      author_id: string;
+      body: string;
+      is_internal?: boolean;
+    } = {
+      case_id: id,
+      author_id: profile.id,
+      body: parsed.data.body.trim(),
+    };
+    if (parsed.data.is_internal) {
+      insertRow.is_internal = true;
     }
 
     const { data, error } = await supabase
       .from("case_comments")
-      .insert({
-        case_id: id,
-        author_id: profile.id,
-        body: parsed.data.body.trim(),
-      })
+      .insert(insertRow)
       .select("id, case_id, body, created_at")
       .single();
 

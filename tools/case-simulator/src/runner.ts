@@ -41,19 +41,42 @@ export async function runScenario(params: {
       });
       steps.push(step);
       if (step.ok && action.saveAs && step.actual) {
-        const saved = step.actual as { id?: string; version?: number; jobId?: string };
+        const saved = step.actual as {
+          id?: string;
+          version?: number;
+          jobId?: string;
+          command?: { idempotencyKey?: string; requestHash?: string };
+        };
         vars[action.saveAs] = saved.id ?? saved.jobId ?? step.actual;
-        if (saved.id) {
+        if (saved.id && action.action === "create_case") {
           createdCaseIds.push(saved.id);
-          if (action.saveAs === "caseId" || vars.caseId == null) {
-            vars.caseId = saved.id;
-          }
+          vars.caseId = saved.id;
+        } else if (saved.id && action.saveAs === "caseId") {
+          createdCaseIds.push(saved.id);
+          vars.caseId = saved.id;
         }
         if (saved.jobId) {
           vars.jobId = saved.jobId;
         }
         if (typeof saved.version === "number") {
           vars.caseVersion = saved.version;
+        }
+      }
+      if (step.ok && step.actual) {
+        const saved = step.actual as {
+          command?: { idempotencyKey?: string; requestHash?: string };
+        };
+        if (action.action === "execute_wallet_adjustment") {
+          vars.walletExecute = step.actual;
+          if (saved.command?.idempotencyKey) {
+            vars.walletIdempotencyKey = saved.command.idempotencyKey;
+          }
+          if (saved.command?.requestHash) {
+            vars.walletRequestHash = saved.command.requestHash;
+          }
+        }
+        if (action.action === "inquire_wallet_status") {
+          vars.walletStatus = step.actual;
         }
       }
       if (
@@ -177,6 +200,9 @@ async function executeActionStep(params: {
     });
 
     const ok = params.action.expectError ? !result.ok : result.ok;
+    if (!result.ok && result.errorCode) {
+      params.vars.lastErrorCode = result.errorCode;
+    }
     return {
       scenario: params.scenarioName,
       step: stepName,

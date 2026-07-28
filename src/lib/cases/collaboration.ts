@@ -6,7 +6,8 @@ import {
   claimCase,
   reassignWithinGroup,
 } from "@/lib/assignment/service";
-import { canCommentOnCase } from "@/lib/auth/permissions";
+import { canCommentOnCase, canPostInternalComment } from "@/lib/auth/permissions";
+import { assertCaseAccess } from "@/lib/cases/access";
 import { getCurrentProfile } from "@/lib/auth/session";
 import {
   markAllNotificationsRead,
@@ -192,19 +193,40 @@ export async function addCaseComment(
     const supabase = await createClient();
     const { data: existingCase, error: fetchError } = await supabase
       .from("cases")
-      .select("id")
+      .select(
+        "id, organization_id, requester_id, assigned_agent_id, assigned_group_id, status, approver_id"
+      )
       .eq("id", parsed.data.caseId)
-      .single();
+      .maybeSingle();
 
-    if (fetchError || !existingCase) {
-      return actionFailure("Case not found.", { code: "NOT_FOUND" });
+    const access = await assertCaseAccess(profile, existingCase);
+    if (!access.success) {
+      return actionFailure(access.error ?? "Case not found.", {
+        code: access.code ?? "NOT_FOUND",
+      });
     }
 
-    const { error } = await supabase.from("case_comments").insert({
+    if (parsed.data.is_internal && !canPostInternalComment(profile.role)) {
+      return actionFailure("You cannot post internal comments.", {
+        code: "FORBIDDEN",
+      });
+    }
+
+    const insertRow: {
+      case_id: string;
+      author_id: string;
+      body: string;
+      is_internal?: boolean;
+    } = {
       case_id: parsed.data.caseId,
       author_id: profile.id,
       body: parsed.data.body.trim(),
-    });
+    };
+    if (parsed.data.is_internal) {
+      insertRow.is_internal = true;
+    }
+
+    const { error } = await supabase.from("case_comments").insert(insertRow);
 
     if (error) {
       return actionFailure(error.message, { code: "VALIDATION_ERROR" });
@@ -248,12 +270,17 @@ export async function uploadCaseAttachment(
     const supabase = await createClient();
     const { data: existingCase, error: fetchError } = await supabase
       .from("cases")
-      .select("id")
+      .select(
+        "id, organization_id, requester_id, assigned_agent_id, assigned_group_id, status, approver_id"
+      )
       .eq("id", caseId)
-      .single();
+      .maybeSingle();
 
-    if (fetchError || !existingCase) {
-      return actionFailure("Case not found.", { code: "NOT_FOUND" });
+    const access = await assertCaseAccess(profile, existingCase);
+    if (!access.success) {
+      return actionFailure(access.error ?? "Case not found.", {
+        code: access.code ?? "NOT_FOUND",
+      });
     }
 
     const safeName = file.name.replace(/[^\w.\-()+ ]/g, "_");

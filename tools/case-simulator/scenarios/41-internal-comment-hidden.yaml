@@ -1,0 +1,48 @@
+name: Internal comment hidden from requester
+description: Operations internal comments are not visible to the requester
+tags: [security, comments, phase11]
+actors:
+  - id: requester
+    email: requester@example.com
+    password: Password123!
+  - id: agent
+    email: agent@example.com
+    password: Password123!
+setup:
+  titlePrefix: "[sim-p11-int]"
+actions:
+  - actor: requester
+    action: create_case
+    saveAs: caseId
+    params:
+      title: "[sim-p11-int] Internal comment visibility"
+      categoryCode: wallet
+      subcategoryCode: duplicate_credit
+      priority: medium
+      adjustment_amount: 120
+  - actor: agent
+    action: claim_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: acknowledge_case
+    params: { caseId: $caseId }
+  - actor: agent
+    action: add_comment
+    params:
+      caseId: $caseId
+      body: "[sim-p11-int] Public update for requester"
+      is_internal: false
+  - actor: agent
+    action: add_comment
+    params:
+      caseId: $caseId
+      body: "[sim-p11-int] Internal ops note"
+      is_internal: true
+assertions:
+  - type: internal_comment_hidden
+    actor: requester
+    params:
+      caseId: $caseId
+      marker: "[sim-p11-int] Internal ops note"
+cleanup:
+  caseTitlePrefix: "[sim-p11-int]"
