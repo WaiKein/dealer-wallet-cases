@@ -1,3 +1,6 @@
+id: SIM-027
+runbookRefs:
+  - RB-APPROVAL-MAKER-CHECKER-REQUESTER
 name: Requester self-approval denied
 description: Requester cannot approve their own case (maker-checker)
 tags: [approvals, security, phase9]

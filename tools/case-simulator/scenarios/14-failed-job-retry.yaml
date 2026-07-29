@@ -1,3 +1,6 @@
+id: SIM-014
+runbookRefs:
+  - RB-JOB-RETRY
 name: Failed job retry
 tags: [reliability, jobs]
 actors:

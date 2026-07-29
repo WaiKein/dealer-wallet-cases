@@ -1,3 +1,6 @@
+id: SIM-023
+runbookRefs:
+  - RB-EMAIL-OUTBOX-DELIVER
 name: Email outbox delivery when flag enabled
 description: Enable email flag, trigger approval notification, assert delivery outbox row
 tags: [email, notifications]

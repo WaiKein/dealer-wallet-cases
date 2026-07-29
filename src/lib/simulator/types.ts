@@ -12,8 +12,10 @@ export interface SimulatorStepResult {
 }
 
 export interface SimulatorScenarioResult {
+  id?: string;
   name: string;
   tags: string[];
+  runbookRefs?: string[];
   ok: boolean;
   steps: SimulatorStepResult[];
   startedAt: string;
@@ -22,9 +24,11 @@ export interface SimulatorScenarioResult {
 
 export interface SimulatorScenarioSummary {
   file: string;
+  id?: string;
   name: string;
   description?: string;
   tags: string[];
+  runbookRefs?: string[];
   actionCount: number;
   assertionCount: number;
 }

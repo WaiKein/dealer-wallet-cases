@@ -1,3 +1,6 @@
+id: SIM-026
+runbookRefs:
+  - RB-APPROVAL-SEQUENTIAL-TWO-LEVEL
 name: High-value sequential two-level approval
 description: Matched multi-level rule requires two sequential approvals before APPROVED
 tags: [approvals, workflow, phase9]

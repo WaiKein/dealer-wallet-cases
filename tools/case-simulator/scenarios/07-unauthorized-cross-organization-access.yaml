@@ -1,3 +1,6 @@
+id: SIM-007
+runbookRefs:
+  - RB-SEC-CROSS-ORG-DENY
 name: Unauthorized cross-organization access
 tags: [security]
 actors:

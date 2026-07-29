@@ -1,3 +1,6 @@
+id: SIM-038
+runbookRefs:
+  - RB-ADMIN-CONFIG-VERSION-RETAINED
 name: Admin configuration change retains rule version on case
 description: Case approval request keeps the rule code/version selected at request time
 tags: [admin, approvals, phase9]

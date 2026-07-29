@@ -1,3 +1,6 @@
+id: SIM-018
+runbookRefs:
+  - RB-WALLET-TEMP-FAILURE
 name: Wallet mock temporary failure
 description: Temporary provider failure is retryable without status inquiry
 tags: [wallet, integration]

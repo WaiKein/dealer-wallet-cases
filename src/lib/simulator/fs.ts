@@ -34,17 +34,21 @@ export function listSimulatorScenarios(): SimulatorScenarioSummary[] {
     .map((file) => {
       const content = fs.readFileSync(path.join(dir, file), "utf8");
       const parsed = parseYaml(content) as {
+        id?: string;
         name?: string;
         description?: string;
         tags?: string[];
+        runbookRefs?: string[];
         actions?: unknown[];
         assertions?: unknown[];
       };
       return {
         file,
+        id: parsed.id,
         name: parsed.name ?? file,
         description: parsed.description,
         tags: parsed.tags ?? [],
+        runbookRefs: parsed.runbookRefs ?? [],
         actionCount: parsed.actions?.length ?? 0,
         assertionCount: parsed.assertions?.length ?? 0,
       };

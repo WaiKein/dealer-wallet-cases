@@ -1,3 +1,6 @@
+id: SIM-012
+runbookRefs:
+  - RB-CASE-CONCURRENT-UPDATE
 name: Concurrent case update
 tags: [reliability]
 actors:

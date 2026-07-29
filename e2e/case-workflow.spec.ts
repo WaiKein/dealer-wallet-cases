@@ -10,7 +10,7 @@ const CASE_TITLE = `E2E auto assignment case ${Date.now()}`;
 
 test.describe.configure({ mode: "serial" });
 
-test("submit case and automatically assign group", async ({ page }) => {
+test("[RB-CASE-CREATE-VALID] [RB-CASE-AUTO-ASSIGN-GROUP] [RB-AUTH-LOGIN-VALID] submit case and automatically assign group", async ({ page }) => {
   await login(page, "requester@example.com");
   await page.goto("/cases/new");
 
@@ -35,7 +35,7 @@ test("submit case and automatically assign group", async ({ page }) => {
   await signOut(page);
 });
 
-test("agent claims and acknowledges case", async ({ page }) => {
+test("[RB-CASE-CLAIM] [RB-CASE-ACKNOWLEDGE] agent claims and acknowledges case", async ({ page }) => {
   await login(page, "agent@example.com");
   await page.goto("/workspace");
   await expect(page.getByText("Unassigned cases for my groups")).toBeVisible();
@@ -50,7 +50,7 @@ test("agent claims and acknowledges case", async ({ page }) => {
   await signOut(page);
 });
 
-test("case reaches pending approval and approver is notified", async ({
+test("[RB-CASE-PENDING-APPROVAL-NOTIFY] case reaches pending approval and approver is notified", async ({
   page,
 }) => {
   await login(page, "agent@example.com");
@@ -72,7 +72,7 @@ test("case reaches pending approval and approver is notified", async ({
   await signOut(page);
 });
 
-test("SLA pauses while waiting for requester", async ({ page }) => {
+test("[RB-CASE-WAIT-REQUESTER] [RB-SLA-RESOLUTION-PAUSE-RESUME] SLA pauses while waiting for requester", async ({ page }) => {
   await login(page, "agent@example.com");
   await page.goto("/cases/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
   await confirmTransition(page, /move to waiting for requester/i);
@@ -83,7 +83,7 @@ test("SLA pauses while waiting for requester", async ({ page }) => {
   await signOut(page);
 });
 
-test("breached case appears in the breached queue", async ({ page }) => {
+test("[RB-SLA-BREACHED-QUEUE] [RB-SLA-FIRST-RESPONSE-BREACH] breached case appears in the breached queue", async ({ page }) => {
   await login(page, "agent@example.com");
   await page.goto("/workspace");
   await expect(page.getByText("Breached cases")).toBeVisible();

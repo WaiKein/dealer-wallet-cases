@@ -1,3 +1,6 @@
+id: SIM-030
+runbookRefs:
+  - RB-APPROVAL-DELEGATION-VALID
 name: Valid delegated approval
 description: Team lead approves via active delegation from approver
 tags: [approvals, delegation, phase9]

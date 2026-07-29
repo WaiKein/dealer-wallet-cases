@@ -1,3 +1,6 @@
+id: SIM-034
+runbookRefs:
+  - RB-EMAIL-DEDUPE
 name: Duplicate email suppression
 description: Repeated notification dispatch does not create extra DELIVERED outbox rows
 tags: [email, notifications, phase9]

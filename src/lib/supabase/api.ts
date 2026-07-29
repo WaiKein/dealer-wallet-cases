@@ -23,7 +23,9 @@ export function createBearerClient(accessToken: string) {
 export function createServiceClient() {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceKey) {
-    throw new Error("SUPABASE_SERVICE_ROLE_KEY is required for test-control.");
+    throw new Error(
+      "SUPABASE_SERVICE_ROLE_KEY is required. Run .\\scripts\\setup-local.ps1 or add it to .env.local."
+    );
   }
   return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

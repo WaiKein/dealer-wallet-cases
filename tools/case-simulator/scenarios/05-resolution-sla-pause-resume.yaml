@@ -1,3 +1,6 @@
+id: SIM-005
+runbookRefs:
+  - RB-SLA-RESOLUTION-PAUSE-RESUME
 name: Resolution SLA pause and resume
 tags: [sla]
 actors:

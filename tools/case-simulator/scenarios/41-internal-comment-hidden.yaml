@@ -1,3 +1,6 @@
+id: SIM-041
+runbookRefs:
+  - RB-SEC-INTERNAL-COMMENT-HIDDEN
 name: Internal comment hidden from requester
 description: Operations internal comments are not visible to the requester
 tags: [security, comments, phase11]

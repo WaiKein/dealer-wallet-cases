@@ -1,3 +1,6 @@
+id: SIM-006
+runbookRefs:
+  - RB-SEC-CROSS-TEAM-DENY
 name: Unauthorized cross-team access
 tags: [security]
 actors:

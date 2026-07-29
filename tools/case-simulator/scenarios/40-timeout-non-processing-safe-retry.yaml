@@ -1,3 +1,6 @@
+id: SIM-040
+runbookRefs:
+  - RB-WALLET-TIMEOUT-SAFE-RETRY
 name: Timeout confirmed non-processing then safe retry
 description: Uncertain timeout → status inquiry confirms non-processing → safe retry path
 tags: [wallet, integration, phase9]

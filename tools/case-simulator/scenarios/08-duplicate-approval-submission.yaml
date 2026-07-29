@@ -1,3 +1,6 @@
+id: SIM-008
+runbookRefs:
+  - RB-APPROVAL-DUPLICATE-SUBMIT
 name: Duplicate approval submission
 tags: [workflow, security]
 actors:

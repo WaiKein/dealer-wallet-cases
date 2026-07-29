@@ -1,3 +1,6 @@
+id: SIM-010
+runbookRefs:
+  - RB-CASE-REOPEN
 name: Reopen resolved case
 tags: [workflow]
 actors:

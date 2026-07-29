@@ -1,3 +1,6 @@
+id: SIM-029
+runbookRefs:
+  - RB-APPROVAL-LIMIT-EXCEEDED
 name: Approver exceeds approval limit
 description: Approval denied when amount exceeds rule approver_limit
 tags: [approvals, security, phase9]

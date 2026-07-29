@@ -1,3 +1,6 @@
+id: SIM-037
+runbookRefs:
+  - RB-EXCEPTION-RESOLVE
 name: Resolve operational exception
 description: Failed integration exception can be resolved by ops
 tags: [exceptions, phase9]

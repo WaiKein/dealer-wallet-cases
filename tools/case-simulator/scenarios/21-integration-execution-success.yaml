@@ -1,3 +1,6 @@
+id: SIM-021
+runbookRefs:
+  - RB-WALLET-EXEC-AFTER-APPROVAL
 name: Integration execution after approval
 description: Approval queues wallet execution; jobs drain to SUCCEEDED before resolve
 tags: [wallet, integration, workflow]

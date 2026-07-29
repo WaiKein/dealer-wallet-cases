@@ -1,3 +1,6 @@
+id: SIM-019
+runbookRefs:
+  - RB-WALLET-RETRY-SUCCESS
 name: Wallet mock retry then success
 description: Temporary failure on first attempt, success on second for the same idempotency key
 tags: [wallet, integration]

@@ -1,3 +1,6 @@
+id: SIM-025
+runbookRefs:
+  - RB-DASHBOARD-KPI-LOAD
 name: Management dashboard KPIs
 description: Authorised agent can load aggregated management snapshot
 tags: [management, dashboard]

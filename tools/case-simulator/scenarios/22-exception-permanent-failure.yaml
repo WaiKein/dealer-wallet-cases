@@ -1,3 +1,6 @@
+id: SIM-022
+runbookRefs:
+  - RB-EXCEPTION-PERMANENT-FAILURE
 name: Exception queue after permanent wallet failure
 description: Permanent mock failure creates an operations exception row
 tags: [exceptions, wallet, integration]

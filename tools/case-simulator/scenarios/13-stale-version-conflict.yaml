@@ -1,3 +1,6 @@
+id: SIM-013
+runbookRefs:
+  - RB-CASE-STALE-VERSION
 name: Stale version conflict
 tags: [reliability]
 actors:

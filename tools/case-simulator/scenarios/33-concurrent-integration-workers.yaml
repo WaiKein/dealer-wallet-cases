@@ -1,3 +1,6 @@
+id: SIM-033
+runbookRefs:
+  - RB-WALLET-CONCURRENT-WORKERS
 name: Concurrent integration workers drain safely
 description: Multiple job drains after approval leave a single SUCCEEDED execution
 tags: [wallet, integration, reliability, phase9]

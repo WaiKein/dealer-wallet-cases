@@ -1,3 +1,6 @@
+id: SIM-032
+runbookRefs:
+  - RB-WALLET-EXEC-IDEMPOTENT
 name: Duplicate wallet execution is idempotent
 description: Same idempotency key returns consistent success without double-processing
 tags: [wallet, idempotency, phase9]

@@ -1,3 +1,6 @@
+id: SIM-016
+runbookRefs:
+  - RB-API-IDEMPOTENCY-KEY
 name: Duplicate idempotency key
 tags: [reliability]
 actors:

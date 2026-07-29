@@ -1,3 +1,6 @@
+id: SIM-004
+runbookRefs:
+  - RB-SLA-FIRST-RESPONSE-BREACH
 name: First-response SLA breach
 tags: [sla]
 actors:

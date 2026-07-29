@@ -155,8 +155,10 @@ export async function runScenario(params: {
 
   const finishedAt = new Date().toISOString();
   return {
+    id: params.scenario.id,
     name: params.scenario.name,
     tags: params.scenario.tags ?? [],
+    runbookRefs: params.scenario.runbookRefs ?? [],
     ok: steps.every((step) => step.ok),
     steps,
     startedAt,

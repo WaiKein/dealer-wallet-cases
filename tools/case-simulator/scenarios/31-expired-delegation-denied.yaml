@@ -1,3 +1,6 @@
+id: SIM-031
+runbookRefs:
+  - RB-APPROVAL-DELEGATION-EXPIRED
 name: Expired delegation denied
 description: Team lead cannot approve with an expired delegation
 tags: [approvals, delegation, security, phase9]

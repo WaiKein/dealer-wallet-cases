@@ -1,3 +1,6 @@
+id: SIM-009
+runbookRefs:
+  - RB-CASE-CONCURRENT-CLAIM
 name: Two agents concurrently claiming one case
 tags: [security, workflow]
 actors:

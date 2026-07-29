@@ -19,6 +19,7 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test
+      - run: npm run test:runbook-sync
       - run: npm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
@@ -41,6 +42,9 @@ jobs:
           test -f supabase/migrations/20260101000010_admin_console.sql
           test -f supabase/migrations/20260101000011_admin_console_seed.sql
           test -f supabase/migrations/20260101000012_approval_runtime.sql
+          test -f supabase/migrations/20260101000022_security_fixes.sql
+          test -f supabase/migrations/20260101000023_security_hardening_followup.sql
+          test -f supabase/migrations/20260101000024_idempotency_claim_token.sql
           supabase migration list --local
 
   simulator-smoke:

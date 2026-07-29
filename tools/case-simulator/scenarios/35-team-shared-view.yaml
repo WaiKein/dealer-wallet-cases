@@ -1,3 +1,6 @@
+id: SIM-035
+runbookRefs:
+  - RB-VIEW-TEAM-SHARED
 name: Team-shared saved view access
 description: Team member can create and load a team-scoped saved view
 tags: [views, phase9]

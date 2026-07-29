@@ -1,3 +1,6 @@
+id: SIM-011
+runbookRefs:
+  - RB-APPROVAL-DUPLICATE-REQUEST
 name: Duplicate approval request
 tags: [reliability, workflow]
 actors:

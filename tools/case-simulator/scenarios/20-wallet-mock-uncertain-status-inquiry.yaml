@@ -1,3 +1,6 @@
+id: SIM-020
+runbookRefs:
+  - RB-WALLET-UNKNOWN-INQUIRY
 name: Wallet mock uncertain timeout then status inquiry
 description: Uncertain timeout requires status inquiry; NOT_FOUND allows a safe execute retry
 tags: [wallet, integration]

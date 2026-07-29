@@ -1,3 +1,6 @@
+id: SIM-039
+runbookRefs:
+  - RB-DASHBOARD-KPI-VALUE
 name: Dashboard KPI validation after case create
 description: Management dashboard KPIs respond and cases_submitted is at least 1
 tags: [management, phase9]

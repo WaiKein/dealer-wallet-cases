@@ -1,3 +1,6 @@
+id: SIM-015
+runbookRefs:
+  - RB-JOB-DEAD-LETTER
 name: Dead-letter job
 tags: [reliability, jobs]
 actors:

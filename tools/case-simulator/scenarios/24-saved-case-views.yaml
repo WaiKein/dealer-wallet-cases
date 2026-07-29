@@ -1,3 +1,6 @@
+id: SIM-024
+runbookRefs:
+  - RB-VIEW-LIST-CREATE-PERSONAL
 name: Saved case views list and personal create
 description: System views are listed; agent can create a personal view and apply it
 tags: [views, cases]

@@ -1,3 +1,6 @@
+id: SIM-028
+runbookRefs:
+  - RB-APPROVAL-MAKER-CHECKER-AGENT
 name: Assigned agent maker-checker denial
 description: Assigned ops agent cannot approve the case they processed
 tags: [approvals, security, phase9]

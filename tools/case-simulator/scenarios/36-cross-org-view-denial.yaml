@@ -1,3 +1,6 @@
+id: SIM-036
+runbookRefs:
+  - RB-VIEW-CROSS-ORG-DENY
 name: Cross-organisation saved view denial
 description: Actor cannot load a saved view belonging to another organisation
 tags: [views, security, phase9]

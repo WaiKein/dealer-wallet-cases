@@ -11,6 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:runbook-sync": "tsx scripts/verify-runbook-sync.ts",
+    "generate:runbook-coverage": "tsx scripts/generate-runbook-coverage.ts",
     "db:reset": "supabase db reset",
     "simulate": "tsx tools/case-simulator/src/cli.ts",
     "simulate:smoke": "tsx tools/case-simulator/src/cli.ts --tags=smoke",

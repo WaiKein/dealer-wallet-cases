@@ -5,7 +5,11 @@ import type { ScenarioResult, StepResult } from "../types.js";
 export function printConsoleReport(results: ScenarioResult[]): void {
   for (const result of results) {
     const mark = result.ok ? "PASS" : "FAIL";
-    console.log(`\n[${mark}] ${result.name}`);
+    const idLabel = result.id ? `${result.id} — ` : "";
+    console.log(`\n[${mark}] ${idLabel}${result.name}`);
+    if (result.runbookRefs?.length) {
+      console.log(`       covers: ${result.runbookRefs.join(", ")}`);
+    }
     for (const step of result.steps) {
       const stepMark = step.ok ? "✓" : "✗";
       console.log(
@@ -40,11 +44,14 @@ export function writeJUnitReport(results: ScenarioResult[], outDir: string): str
   const suites = results
     .map((result) => {
       const failures = result.steps.filter((step) => !step.ok);
+      const classname = escapeXml(
+        result.id ? `${result.id}:${result.name}` : result.name
+      );
       const testcases = result.steps
         .map((step) => {
           const name = escapeXml(`${step.step} [${step.actor}]`);
           if (step.ok) {
-            return `<testcase classname="${escapeXml(result.name)}" name="${name}" time="${(step.durationMs / 1000).toFixed(3)}" />`;
+            return `<testcase classname="${classname}" name="${name}" time="${(step.durationMs / 1000).toFixed(3)}" />`;
           }
           const message = escapeXml(
             [
@@ -53,14 +60,24 @@ export function writeJUnitReport(results: ScenarioResult[], outDir: string): str
               step.error ? `error=${step.error}` : "",
               step.correlationId ? `correlationId=${step.correlationId}` : "",
               step.apiResponse ? `api=${JSON.stringify(step.apiResponse)}` : "",
+              result.runbookRefs?.length
+                ? `runbookRefs=${result.runbookRefs.join(",")}`
+                : "",
             ]
               .filter(Boolean)
               .join(" | ")
           );
-          return `<testcase classname="${escapeXml(result.name)}" name="${name}" time="${(step.durationMs / 1000).toFixed(3)}"><failure message="${message}" /></testcase>`;
+          return `<testcase classname="${classname}" name="${name}" time="${(step.durationMs / 1000).toFixed(3)}"><failure message="${message}" /></testcase>`;
         })
         .join("\n");
-      return `<testsuite name="${escapeXml(result.name)}" tests="${result.steps.length}" failures="${failures.length}">${testcases}</testsuite>`;
+      const props = (result.runbookRefs ?? [])
+        .map(
+          (ref) =>
+            `<property name="runbookRef" value="${escapeXml(ref)}" />`
+        )
+        .join("");
+      const suiteName = escapeXml(result.id ?? result.name);
+      return `<testsuite name="${suiteName}" tests="${result.steps.length}" failures="${failures.length}"><properties>${props}</properties>${testcases}</testsuite>`;
     })
     .join("\n");
 

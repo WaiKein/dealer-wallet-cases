@@ -1,3 +1,10 @@
+id: SIM-001
+runbookRefs:
+  - RB-CASE-CREATE-VALID
+  - RB-CASE-CLAIM
+  - RB-CASE-ACKNOWLEDGE
+  - RB-APPROVAL-HAPPY
+  - RB-CASE-RESOLVE
 name: Successful wallet adjustment
 description: End-to-end happy path through approval and resolution
 tags: [workflow, smoke]

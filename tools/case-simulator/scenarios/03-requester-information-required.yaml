@@ -1,3 +1,6 @@
+id: SIM-003
+runbookRefs:
+  - RB-CASE-WAIT-REQUESTER
 name: Requester information required
 tags: [workflow]
 actors:

@@ -1,3 +1,6 @@
+id: SIM-002
+runbookRefs:
+  - RB-APPROVAL-REJECT
 name: Approval rejection
 tags: [workflow]
 actors:

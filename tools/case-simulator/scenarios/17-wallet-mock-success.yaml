@@ -1,3 +1,6 @@
+id: SIM-017
+runbookRefs:
+  - RB-WALLET-SUCCESS
 name: Wallet mock API success
 description: Configure mock provider and execute a successful wallet adjustment via test-control
 tags: [wallet, integration, smoke]

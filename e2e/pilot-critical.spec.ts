@@ -15,7 +15,7 @@ const RETRY_CASE_TITLE = `E2E pilot retry path ${Date.now()}`;
 
 test.describe.configure({ mode: "serial" });
 
-test("administrator configures an approval rule", async ({ page }) => {
+test("[RB-ADMIN-APPROVAL-RULE-CREATE] administrator configures an approval rule", async ({ page }) => {
   await login(page, "admin@example.com");
   await page.goto("/admin/approval-rules");
 
@@ -33,7 +33,7 @@ test("administrator configures an approval rule", async ({ page }) => {
   await signOut(page);
 });
 
-test("requester creates an adjustment case", async ({ page }) => {
+test("[RB-CASE-CREATE-VALID] requester creates an adjustment case", async ({ page }) => {
   await login(page, "requester@example.com");
   await page.goto("/cases/new");
 
@@ -62,7 +62,7 @@ test("requester creates an adjustment case", async ({ page }) => {
   await signOut(page);
 });
 
-test("agent reviews and requests approval", async ({ page }) => {
+test("[RB-CASE-CLAIM] [RB-CASE-ACKNOWLEDGE] agent reviews and requests approval", async ({ page }) => {
   await login(page, "agent@example.com");
   await page.goto("/workspace");
   await openCaseByTitle(page, HAPPY_CASE_TITLE);
@@ -80,7 +80,7 @@ test("agent reviews and requests approval", async ({ page }) => {
   await signOut(page);
 });
 
-test("approver approves the request", async ({ page }) => {
+test("[RB-APPROVAL-HAPPY] approver approves the request", async ({ page }) => {
   await login(page, "approver@example.com");
   await page.goto("/cases");
   await openCaseByTitle(page, HAPPY_CASE_TITLE);
@@ -92,7 +92,7 @@ test("approver approves the request", async ({ page }) => {
   await signOut(page);
 });
 
-test("mock execution succeeds and case is resolved", async ({
+test("[RB-WALLET-SUCCESS] [RB-CASE-RESOLVE] mock execution succeeds and case is resolved", async ({
   page,
   request,
 }) => {
@@ -118,7 +118,7 @@ test("mock execution succeeds and case is resolved", async ({
   await signOut(page);
 });
 
-test("full timeline is visible on the resolved case", async ({ page }) => {
+test("[RB-CASE-TIMELINE-VISIBLE] full timeline is visible on the resolved case", async ({ page }) => {
   await login(page, "agent@example.com");
   await page.goto("/cases");
   await openCaseByTitle(page, HAPPY_CASE_TITLE);
@@ -130,7 +130,7 @@ test("full timeline is visible on the resolved case", async ({ page }) => {
   await signOut(page);
 });
 
-test("failed integration appears in the exception workspace", async ({
+test("[RB-EXCEPTION-PERMANENT-FAILURE] failed integration appears in the exception workspace", async ({
   page,
   request,
 }) => {
@@ -188,7 +188,7 @@ test("failed integration appears in the exception workspace", async ({
   await signOut(page);
 });
 
-test("team lead safely retries a retryable failure", async ({
+test("[RB-EXCEPTION-RETRY-UI] [RB-WALLET-RETRY-SUCCESS] team lead safely retries a retryable failure", async ({
   page,
   request,
 }) => {
@@ -214,7 +214,7 @@ test("team lead safely retries a retryable failure", async ({
   await signOut(page);
 });
 
-test("manager views dashboard KPIs", async ({ page }) => {
+test("[RB-DASHBOARD-KPI-LOAD] manager views dashboard KPIs", async ({ page }) => {
   await login(page, "teamlead@example.com");
   await page.goto("/dashboard/management");
   await expect(page.getByText("Management dashboard")).toBeVisible();
@@ -224,7 +224,7 @@ test("manager views dashboard KPIs", async ({ page }) => {
   await signOut(page);
 });
 
-test("user creates and reopens a saved view", async ({ page }) => {
+test("[RB-VIEW-LIST-CREATE-PERSONAL] user creates and reopens a saved view", async ({ page }) => {
   const viewName = `E2E view ${Date.now()}`;
 
   await login(page, "agent@example.com");
@@ -240,7 +240,7 @@ test("user creates and reopens a saved view", async ({ page }) => {
   await signOut(page);
 });
 
-test("unauthorised user is denied administration access", async ({ page }) => {
+test("[RB-NAV-ADMIN-DENIED] unauthorised user is denied administration access", async ({ page }) => {
   await login(page, "agent@example.com");
   await page.goto("/admin");
   await expect(page).toHaveURL(/\/dashboard/);

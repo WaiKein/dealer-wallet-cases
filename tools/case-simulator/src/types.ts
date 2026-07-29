@@ -28,9 +28,11 @@ export interface ScenarioAssertion {
 }
 
 export interface ScenarioFile {
+  id: string;
   name: string;
   description?: string;
   tags?: string[];
+  runbookRefs: string[];
   actors: ScenarioActor[];
   setup?: Record<string, unknown>;
   actions: ScenarioAction[];
@@ -56,8 +58,10 @@ export interface StepResult {
 }
 
 export interface ScenarioResult {
+  id: string;
   name: string;
   tags: string[];
+  runbookRefs: string[];
   ok: boolean;
   steps: StepResult[];
   startedAt: string;

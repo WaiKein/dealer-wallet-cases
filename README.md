@@ -145,13 +145,14 @@ See `tools/case-simulator/README.md` for details.
 - Background jobs (`background_jobs`) for SLA refresh + notification dispatch
 - Worker: `npm run jobs:worker` (optional `JOBS_POLL_INTERVAL_MS` loop) or cron → `POST /api/jobs/tick` with `x-jobs-tick-secret`
 - Health: `/api/health/live`, `/api/health/ready`, `/api/health/database`
-- CI: `.github/workflows/ci.yml` (lint, typecheck, unit, build, migrations, smoke + reliability)
+- CI: `.github/workflows/ci.yml` (lint, typecheck, unit, runbook sync, build, migrations, smoke + reliability)
 - Test-control/simulator routes redirect away in production builds
 
 **Documented system job actions** (service-role, org-scoped, no status transitions):
 `sla.refresh_case`, `notification.dispatch` (see `src/lib/jobs/worker.ts`).
 
 **Ops runbook:** [docs/pilot-ops.md](docs/pilot-ops.md) (env checklist, worker/cron, health, rollback).
+**Full-feature test runbook:** [docs/system-full-feature-test-runbook.md](docs/system-full-feature-test-runbook.md) (stable `RB-*` IDs; sync with `npm run test:runbook-sync`).
 **Admin console:** [docs/admin-console.md](docs/admin-console.md).
 **Approval matrix / maker-checker:** [docs/approval-matrix.md](docs/approval-matrix.md), [docs/maker-checker.md](docs/maker-checker.md).
 **Wallet provider (mock):** [docs/wallet-provider-interface.md](docs/wallet-provider-interface.md), [docs/mock-wallet-provider.md](docs/mock-wallet-provider.md).
