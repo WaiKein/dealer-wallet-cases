@@ -14,6 +14,7 @@ requirements:
       anchor: rb-auth-login-valid
       procedureLevel: detailed
       section: "1.1"
+      journey: UAT-AUTH-ACCESS-01
   - id: RB-NAV-ADMIN-DENIED
     title: Non-admin is redirected away from administration
     area: security
@@ -27,6 +28,7 @@ requirements:
       anchor: rb-nav-admin-denied
       procedureLevel: detailed
       section: "1.2"
+      journey: UAT-AUTH-ACCESS-01
   - id: RB-NAV-ADMIN-CATEGORIES
     title: Admin locates Categories from overview or navigation
     area: navigation
@@ -40,6 +42,7 @@ requirements:
       anchor: rb-nav-admin-categories
       procedureLevel: detailed
       section: "15.1"
+      journey: UAT-ADMIN-CATEGORIES-01
   - id: RB-ADMIN-CATEGORY-CREATE
     title: Admin creates a category
     area: admin
@@ -53,6 +56,7 @@ requirements:
       anchor: rb-admin-category-create
       procedureLevel: detailed
       section: "15.21"
+      journey: UAT-ADMIN-CATEGORIES-01
   - id: RB-ADMIN-CATEGORY-EDIT
     title: Admin edits an existing category
     area: admin
@@ -66,6 +70,7 @@ requirements:
       anchor: rb-admin-category-edit
       procedureLevel: detailed
       section: "15.21"
+      journey: UAT-ADMIN-CATEGORIES-01
   - id: RB-UI-SUBCATEGORY-EDIT
     title: Admin edits an existing subcategory
     area: admin
@@ -79,6 +84,7 @@ requirements:
       anchor: rb-ui-subcategory-edit
       procedureLevel: detailed
       section: "15.22"
+      journey: UAT-ADMIN-CATEGORIES-01
   - id: RB-CASE-CREATE-VALID
     title: Requester creates a valid adjustment case
     area: cases
@@ -93,6 +99,7 @@ requirements:
       anchor: rb-case-create-valid
       procedureLevel: detailed
       section: "2.1"
+      journey: UAT-CASE-HAPPY-01
   - id: RB-CASE-CLAIM
     title: Agent claims an unassigned group case
     area: cases
@@ -107,6 +114,7 @@ requirements:
       anchor: rb-case-claim
       procedureLevel: detailed
       section: "2.2"
+      journey: UAT-CASE-HAPPY-01
   - id: RB-CASE-ACKNOWLEDGE
     title: Assigned agent acknowledges a case
     area: cases
@@ -121,6 +129,7 @@ requirements:
       anchor: rb-case-acknowledge
       procedureLevel: detailed
       section: "2.3"
+      journey: UAT-CASE-HAPPY-01
   - id: RB-CASE-WAIT-REQUESTER
     title: Case can wait for requester information
     area: cases
@@ -135,6 +144,7 @@ requirements:
       anchor: rb-case-wait-requester
       procedureLevel: detailed
       section: "2.4"
+      journey: UAT-CASE-EXCEPTION-01
   - id: RB-CASE-RESOLVE
     title: Approved case can be resolved after successful execution
     area: cases
@@ -149,6 +159,7 @@ requirements:
       anchor: rb-case-resolve
       procedureLevel: detailed
       section: "2.5"
+      journey: UAT-CASE-HAPPY-01
   - id: RB-CASE-REOPEN
     title: Resolved case can be reopened
     area: cases
@@ -160,8 +171,9 @@ requirements:
     runbook:
       file: docs/system-full-feature-test-runbook.md
       anchor: rb-case-reopen
-      procedureLevel: index_only
+      procedureLevel: detailed
       section: "2.6"
+      journey: UAT-CASE-EXCEPTION-01
   - id: RB-CASE-CONCURRENT-CLAIM
     title: Concurrent claims result in a single assignee
     area: cases
@@ -175,6 +187,7 @@ requirements:
       anchor: rb-case-concurrent-claim
       procedureLevel: detailed
       section: "2.7"
+      journey: UAT-CASE-EXCEPTION-01
   - id: RB-CASE-CONCURRENT-UPDATE
     title: Concurrent case updates are conflict-safe
     area: cases
@@ -186,8 +199,9 @@ requirements:
     runbook:
       file: docs/system-full-feature-test-runbook.md
       anchor: rb-case-concurrent-update
-      procedureLevel: index_only
+      procedureLevel: detailed
       section: "2.8"
+      journey: UAT-CASE-EXCEPTION-01
   - id: RB-CASE-STALE-VERSION
     title: Stale case version is rejected
     area: cases
@@ -199,8 +213,9 @@ requirements:
     runbook:
       file: docs/system-full-feature-test-runbook.md
       anchor: rb-case-stale-version
-      procedureLevel: index_only
+      procedureLevel: detailed
       section: "2.9"
+      journey: UAT-CASE-EXCEPTION-01
   - id: RB-CASE-TIMELINE-VISIBLE
     title: Status history timeline is visible on the case
     area: cases
@@ -212,8 +227,9 @@ requirements:
     runbook:
       file: docs/system-full-feature-test-runbook.md
       anchor: rb-case-timeline-visible
-      procedureLevel: index_only
+      procedureLevel: detailed
       section: "2.10"
+      journey: UAT-CASE-HAPPY-01
   - id: RB-CASE-AUTO-ASSIGN-GROUP
     title: Submitted case is auto-assigned to a matching group
     area: cases
@@ -227,6 +243,7 @@ requirements:
       anchor: rb-case-auto-assign-group
       procedureLevel: detailed
       section: "2.11"
+      journey: UAT-CASE-HAPPY-01
   - id: RB-CASE-PENDING-APPROVAL-NOTIFY
     title: Approver is notified when a case reaches pending approval
     area: cases
@@ -238,8 +255,9 @@ requirements:
     runbook:
       file: docs/system-full-feature-test-runbook.md
       anchor: rb-case-pending-approval-notify
-      procedureLevel: index_only
+      procedureLevel: detailed
       section: "2.12"
+      journey: UAT-CASE-HAPPY-01
   - id: RB-APPROVAL-HAPPY
     title: Approver completes a happy-path approval
     area: approvals
@@ -254,6 +272,7 @@ requirements:
       anchor: rb-approval-happy
       procedureLevel: detailed
       section: "3.1"
+      journey: UAT-CASE-HAPPY-01
   - id: RB-APPROVAL-REJECT
     title: Approver can reject a pending case
     area: approvals
@@ -267,6 +286,7 @@ requirements:
       anchor: rb-approval-reject
       procedureLevel: detailed
       section: "3.2"
+      journey: UAT-APPROVAL-CONTROLS-01
   - id: RB-APPROVAL-DUPLICATE-SUBMIT
     title: Duplicate approval submission is rejected or idempotent
     area: approvals
@@ -278,8 +298,9 @@ requirements:
     runbook:
       file: docs/system-full-feature-test-runbook.md
       anchor: rb-approval-duplicate-submit
-      procedureLevel: index_only
+      procedureLevel: detailed
       section: "3.3"
+      journey: UAT-APPROVAL-CONTROLS-01
   - id: RB-APPROVAL-DUPLICATE-REQUEST
     title: Duplicate approval request is blocked
     area: approvals
@@ -291,8 +312,9 @@ requirements:
     runbook:
       file: docs/system-full-feature-test-runbook.md
       anchor: rb-approval-duplicate-request
-      procedureLevel: index_only
+      procedureLevel: detailed
       section: "3.4"
+      journey: UAT-APPROVAL-CONTROLS-01
   - id: RB-APPROVAL-SEQUENTIAL-TWO-LEVEL
     title: High-value cases require sequential two-level approval
     area: approvals
@@ -306,6 +328,7 @@ requirements:
       anchor: rb-approval-sequential-two-level
       procedureLevel: detailed
       section: "3.5"
+      journey: UAT-APPROVAL-CONTROLS-01
   - id: RB-APPROVAL-MAKER-CHECKER-REQUESTER
     title: Requester cannot approve their own case
     area: approvals
@@ -319,6 +342,7 @@ requirements:
       anchor: rb-approval-maker-checker-requester
       procedureLevel: detailed
       section: "3.6"
+      journey: UAT-APPROVAL-CONTROLS-01
   - id: RB-APPROVAL-MAKER-CHECKER-AGENT
     title: Assigned agent cannot approve the case they processed
     area: approvals
@@ -332,6 +356,7 @@ requirements:
       anchor: rb-approval-maker-checker-agent
       procedureLevel: detailed
       section: "3.7"
+      journey: UAT-APPROVAL-CONTROLS-01
   - id: RB-APPROVAL-LIMIT-EXCEEDED
     title: Approval is denied when amount exceeds approver limit
     area: approvals
@@ -343,8 +368,9 @@ requirements:
     runbook:
       file: docs/system-full-feature-test-runbook.md
       anchor: rb-approval-limit-exceeded
-      procedureLevel: index_only
+      procedureLevel: detailed
       section: "3.8"
+      journey: UAT-APPROVAL-CONTROLS-01
   - id: RB-APPROVAL-DELEGATION-VALID
     title: Valid delegated approval is accepted
     area: approvals
@@ -356,8 +382,9 @@ requirements:
     runbook:
       file: docs/system-full-feature-test-runbook.md
       anchor: rb-approval-delegation-valid
-      procedureLevel: index_only
+      procedureLevel: detailed
       section: "3.9"
+      journey: UAT-APPROVAL-CONTROLS-01
   - id: RB-APPROVAL-DELEGATION-EXPIRED
     title: Expired delegation cannot approve
     area: approvals
@@ -369,8 +396,9 @@ requirements:
     runbook:
       file: docs/system-full-feature-test-runbook.md
       anchor: rb-approval-delegation-expired
-      procedureLevel: index_only
+      procedureLevel: detailed
       section: "3.10"
+      journey: UAT-APPROVAL-CONTROLS-01
   - id: RB-ADMIN-APPROVAL-RULE-CREATE
     title: Administrator configures an approval rule
     area: admin
@@ -384,6 +412,7 @@ requirements:
       anchor: rb-admin-approval-rule-create
       procedureLevel: detailed
       section: "3.11"
+      journey: UAT-APPROVAL-CONTROLS-01
   - id: RB-ADMIN-CONFIG-VERSION-RETAINED
     title: Case retains approval rule version selected at request time
     area: admin
@@ -395,8 +424,9 @@ requirements:
     runbook:
       file: docs/system-full-feature-test-runbook.md
       anchor: rb-admin-config-version-retained
-      procedureLevel: index_only
+      procedureLevel: detailed
       section: "3.12"
+      journey: UAT-APPROVAL-CONTROLS-01
   - id: RB-SLA-FIRST-RESPONSE-BREACH
     title: First-response SLA breach is detected
     area: sla
@@ -411,6 +441,7 @@ requirements:
       anchor: rb-sla-first-response-breach
       procedureLevel: detailed
       section: "4.1"
+      journey: UAT-SLA-JOBS-01
   - id: RB-SLA-RESOLUTION-PAUSE-RESUME
     title: Resolution SLA pauses while waiting for requester
     area: sla
@@ -425,6 +456,7 @@ requirements:
       anchor: rb-sla-resolution-pause-resume
       procedureLevel: detailed
       section: "4.2"
+      journey: UAT-SLA-JOBS-01
   - id: RB-SLA-BREACHED-QUEUE
     title: Breached cases appear in the agent workspace queue
     area: sla
@@ -436,8 +468,9 @@ requirements:
     runbook:
       file: docs/system-full-feature-test-runbook.md
       anchor: rb-sla-breached-queue
-      procedureLevel: index_only
+      procedureLevel: detailed
       section: "4.3"
+      journey: UAT-SLA-JOBS-01
   - id: RB-SEC-CROSS-TEAM-DENY
     title: Unauthorized cross-team case access is denied
     area: security
@@ -451,6 +484,7 @@ requirements:
       anchor: rb-sec-cross-team-deny
       procedureLevel: detailed
       section: "5.1"
+      journey: UAT-SECURITY-01
   - id: RB-SEC-CROSS-ORG-DENY
     title: Unauthorized cross-organisation access is denied
     area: security
@@ -464,6 +498,7 @@ requirements:
       anchor: rb-sec-cross-org-deny
       procedureLevel: detailed
       section: "5.2"
+      journey: UAT-SECURITY-01
   - id: RB-SEC-INTERNAL-COMMENT-HIDDEN
     title: Internal comments are hidden from requesters
     area: security
@@ -475,8 +510,9 @@ requirements:
     runbook:
       file: docs/system-full-feature-test-runbook.md
       anchor: rb-sec-internal-comment-hidden
-      procedureLevel: index_only
+      procedureLevel: detailed
       section: "5.3"
+      journey: UAT-SECURITY-01
   - id: RB-JOB-RETRY
     title: Failed background job is retried
     area: reliability
@@ -488,8 +524,9 @@ requirements:
     runbook:
       file: docs/system-full-feature-test-runbook.md
       anchor: rb-job-retry
-      procedureLevel: index_only
+      procedureLevel: detailed
       section: "6.1"
+      journey: UAT-SLA-JOBS-01
   - id: RB-JOB-DEAD-LETTER
     title: Exhausted job moves to dead-letter
     area: reliability
@@ -501,8 +538,9 @@ requirements:
     runbook:
       file: docs/system-full-feature-test-runbook.md
       anchor: rb-job-dead-letter
-      procedureLevel: index_only
+      procedureLevel: detailed
       section: "6.2"
+      journey: UAT-SLA-JOBS-01
   - id: RB-API-IDEMPOTENCY-KEY
     title: Duplicate Idempotency-Key returns consistent result
     area: reliability
@@ -516,6 +554,7 @@ requirements:
       anchor: rb-api-idempotency-key
       procedureLevel: detailed
       section: "6.3"
+      journey: UAT-SLA-JOBS-01
   - id: RB-WALLET-SUCCESS
     title: Mock wallet execute succeeds
     area: wallet
@@ -530,6 +569,7 @@ requirements:
       anchor: rb-wallet-success
       procedureLevel: detailed
       section: "7.1"
+      journey: UAT-WALLET-EXCEPTIONS-01
   - id: RB-WALLET-TEMP-FAILURE
     title: Temporary wallet failure is retryable
     area: wallet
@@ -541,8 +581,9 @@ requirements:
     runbook:
       file: docs/system-full-feature-test-runbook.md
       anchor: rb-wallet-temp-failure
-      procedureLevel: index_only
+      procedureLevel: detailed
       section: "7.2"
+      journey: UAT-WALLET-EXCEPTIONS-01
   - id: RB-WALLET-RETRY-SUCCESS
     title: Wallet retries then succeeds for the same key
     area: wallet
@@ -557,6 +598,7 @@ requirements:
       anchor: rb-wallet-retry-success
       procedureLevel: detailed
       section: "7.3"
+      journey: UAT-WALLET-EXCEPTIONS-01
   - id: RB-WALLET-UNKNOWN-INQUIRY
     title: Uncertain timeout requires status inquiry
     area: wallet
@@ -570,6 +612,7 @@ requirements:
       anchor: rb-wallet-unknown-inquiry
       procedureLevel: detailed
       section: "7.4"
+      journey: UAT-WALLET-EXCEPTIONS-01
   - id: RB-WALLET-EXEC-AFTER-APPROVAL
     title: Approval queues wallet execution to SUCCEEDED
     area: wallet
@@ -583,6 +626,7 @@ requirements:
       anchor: rb-wallet-exec-after-approval
       procedureLevel: detailed
       section: "7.5"
+      journey: UAT-WALLET-EXCEPTIONS-01
   - id: RB-WALLET-EXEC-IDEMPOTENT
     title: Duplicate wallet execution is idempotent
     area: wallet
@@ -596,6 +640,7 @@ requirements:
       anchor: rb-wallet-exec-idempotent
       procedureLevel: detailed
       section: "7.6"
+      journey: UAT-WALLET-EXCEPTIONS-01
   - id: RB-WALLET-CONCURRENT-WORKERS
     title: Concurrent integration workers leave a single success
     area: wallet
@@ -607,8 +652,9 @@ requirements:
     runbook:
       file: docs/system-full-feature-test-runbook.md
       anchor: rb-wallet-concurrent-workers
-      procedureLevel: index_only
+      procedureLevel: detailed
       section: "7.7"
+      journey: UAT-WALLET-EXCEPTIONS-01
   - id: RB-WALLET-TIMEOUT-SAFE-RETRY
     title: Confirmed non-processing timeout allows safe retry
     area: wallet
@@ -620,8 +666,9 @@ requirements:
     runbook:
       file: docs/system-full-feature-test-runbook.md
       anchor: rb-wallet-timeout-safe-retry
-      procedureLevel: index_only
+      procedureLevel: detailed
       section: "7.8"
+      journey: UAT-WALLET-EXCEPTIONS-01
   - id: RB-EXCEPTION-PERMANENT-FAILURE
     title: Permanent wallet failure creates an operations exception
     area: exceptions
@@ -636,6 +683,7 @@ requirements:
       anchor: rb-exception-permanent-failure
       procedureLevel: detailed
       section: "8.1"
+      journey: UAT-WALLET-EXCEPTIONS-01
   - id: RB-EXCEPTION-RESOLVE
     title: Operations can resolve an operational exception
     area: exceptions
@@ -649,6 +697,7 @@ requirements:
       anchor: rb-exception-resolve
       procedureLevel: detailed
       section: "8.2"
+      journey: UAT-WALLET-EXCEPTIONS-01
   - id: RB-EXCEPTION-RETRY-UI
     title: Team lead can retry a retryable failure from exceptions UI
     area: exceptions
@@ -660,8 +709,9 @@ requirements:
     runbook:
       file: docs/system-full-feature-test-runbook.md
       anchor: rb-exception-retry-ui
-      procedureLevel: index_only
+      procedureLevel: detailed
       section: "8.3"
+      journey: UAT-WALLET-EXCEPTIONS-01
   - id: RB-EMAIL-OUTBOX-DELIVER
     title: Email outbox row is created when flag enabled
     area: email
@@ -673,8 +723,9 @@ requirements:
     runbook:
       file: docs/system-full-feature-test-runbook.md
       anchor: rb-email-outbox-deliver
-      procedureLevel: index_only
+      procedureLevel: detailed
       section: "9.1"
+      journey: UAT-SLA-JOBS-01
   - id: RB-EMAIL-DEDUPE
     title: Duplicate email notifications are suppressed
     area: email
@@ -686,8 +737,9 @@ requirements:
     runbook:
       file: docs/system-full-feature-test-runbook.md
       anchor: rb-email-dedupe
-      procedureLevel: index_only
+      procedureLevel: detailed
       section: "9.2"
+      journey: UAT-SLA-JOBS-01
   - id: RB-VIEW-LIST-CREATE-PERSONAL
     title: User can list system views and create a personal view
     area: views
@@ -702,6 +754,7 @@ requirements:
       anchor: rb-view-list-create-personal
       procedureLevel: detailed
       section: "10.1"
+      journey: UAT-VIEWS-DASHBOARD-01
   - id: RB-VIEW-TEAM-SHARED
     title: Team member can create and load a team-scoped view
     area: views
@@ -713,8 +766,9 @@ requirements:
     runbook:
       file: docs/system-full-feature-test-runbook.md
       anchor: rb-view-team-shared
-      procedureLevel: index_only
+      procedureLevel: detailed
       section: "10.2"
+      journey: UAT-VIEWS-DASHBOARD-01
   - id: RB-VIEW-CROSS-ORG-DENY
     title: Cross-organisation saved view access is denied
     area: views
@@ -728,6 +782,7 @@ requirements:
       anchor: rb-view-cross-org-deny
       procedureLevel: detailed
       section: "10.3"
+      journey: UAT-VIEWS-DASHBOARD-01
   - id: RB-DASHBOARD-KPI-LOAD
     title: Authorised user can load management dashboard KPIs
     area: dashboard
@@ -742,6 +797,7 @@ requirements:
       anchor: rb-dashboard-kpi-load
       procedureLevel: detailed
       section: "11.1"
+      journey: UAT-VIEWS-DASHBOARD-01
   - id: RB-DASHBOARD-KPI-VALUE
     title: Dashboard KPI values reflect submitted cases
     area: dashboard
@@ -753,8 +809,9 @@ requirements:
     runbook:
       file: docs/system-full-feature-test-runbook.md
       anchor: rb-dashboard-kpi-value
-      procedureLevel: index_only
+      procedureLevel: detailed
       section: "11.2"
+      journey: UAT-VIEWS-DASHBOARD-01
   - id: RB-DASHBOARD-CSV-EXPORT
     title: Management dashboard CSV export downloads safely
     area: dashboard
@@ -768,6 +825,7 @@ requirements:
       anchor: rb-dashboard-csv-export
       procedureLevel: detailed
       section: "11.3"
+      journey: UAT-VIEWS-DASHBOARD-01
   - id: RB-UI-LAYOUT-RESPONSIVE
     title: Primary pages remain usable on desktop and mobile widths
     area: ui
@@ -779,5 +837,130 @@ requirements:
     runbook:
       file: docs/system-full-feature-test-runbook.md
       anchor: rb-ui-layout-responsive
-      procedureLevel: index_only
+      procedureLevel: detailed
       section: "12.1"
+      journey: UAT-SECURITY-01
+journeys:
+  - id: UAT-AUTH-ACCESS-01
+    title: Authentication and access
+    actor: ACTOR-ADMIN
+    startPage: /login
+    data:
+      - TD-SEED-USERS
+    requirements:
+      - RB-AUTH-LOGIN-VALID
+      - RB-NAV-ADMIN-DENIED
+  - id: UAT-ADMIN-CATEGORIES-01
+    title: Category maintenance
+    actor: ACTOR-ADMIN
+    startPage: /admin/categories
+    data:
+      - TD-CATEGORY-01
+    requirements:
+      - RB-NAV-ADMIN-CATEGORIES
+      - RB-ADMIN-CATEGORY-CREATE
+      - RB-ADMIN-CATEGORY-EDIT
+      - RB-UI-SUBCATEGORY-EDIT
+  - id: UAT-CASE-HAPPY-01
+    title: Case happy path
+    actor: ACTOR-REQUESTER
+    startPage: /cases/new
+    data:
+      - TD-CASE-HAPPY-01
+    requirements:
+      - RB-CASE-CREATE-VALID
+      - RB-CASE-AUTO-ASSIGN-GROUP
+      - RB-CASE-CLAIM
+      - RB-CASE-ACKNOWLEDGE
+      - RB-APPROVAL-HAPPY
+      - RB-CASE-PENDING-APPROVAL-NOTIFY
+      - RB-CASE-RESOLVE
+      - RB-CASE-TIMELINE-VISIBLE
+  - id: UAT-CASE-EXCEPTION-01
+    title: Case exception and concurrency path
+    actor: ACTOR-AGENT
+    startPage: /cases
+    data:
+      - TD-CASE-EXCEPTION-01
+    requirements:
+      - RB-CASE-WAIT-REQUESTER
+      - RB-CASE-REOPEN
+      - RB-CASE-STALE-VERSION
+      - RB-CASE-CONCURRENT-UPDATE
+      - RB-CASE-CONCURRENT-CLAIM
+  - id: UAT-APPROVAL-CONTROLS-01
+    title: Approval controls
+    actor: ACTOR-APPROVER
+    startPage: /cases
+    data:
+      - TD-APPROVAL-CONTROLS-01
+    requirements:
+      - RB-ADMIN-APPROVAL-RULE-CREATE
+      - RB-APPROVAL-REJECT
+      - RB-APPROVAL-DUPLICATE-SUBMIT
+      - RB-APPROVAL-DUPLICATE-REQUEST
+      - RB-APPROVAL-SEQUENTIAL-TWO-LEVEL
+      - RB-APPROVAL-MAKER-CHECKER-REQUESTER
+      - RB-APPROVAL-MAKER-CHECKER-AGENT
+      - RB-APPROVAL-LIMIT-EXCEEDED
+      - RB-APPROVAL-DELEGATION-VALID
+      - RB-APPROVAL-DELEGATION-EXPIRED
+      - RB-ADMIN-CONFIG-VERSION-RETAINED
+  - id: UAT-SLA-JOBS-01
+    title: SLA and background jobs
+    actor: ACTOR-AGENT
+    startPage: /workspace
+    data:
+      - TD-SLA-JOBS-01
+    requirements:
+      - RB-SLA-FIRST-RESPONSE-BREACH
+      - RB-SLA-RESOLUTION-PAUSE-RESUME
+      - RB-SLA-BREACHED-QUEUE
+      - RB-JOB-RETRY
+      - RB-JOB-DEAD-LETTER
+      - RB-API-IDEMPOTENCY-KEY
+      - RB-EMAIL-OUTBOX-DELIVER
+      - RB-EMAIL-DEDUPE
+  - id: UAT-WALLET-EXCEPTIONS-01
+    title: Wallet execution and exceptions
+    actor: ACTOR-AGENT
+    startPage: /operations/exceptions
+    data:
+      - TD-WALLET-01
+    requirements:
+      - RB-WALLET-SUCCESS
+      - RB-WALLET-EXEC-AFTER-APPROVAL
+      - RB-WALLET-TEMP-FAILURE
+      - RB-WALLET-RETRY-SUCCESS
+      - RB-WALLET-UNKNOWN-INQUIRY
+      - RB-WALLET-EXEC-IDEMPOTENT
+      - RB-WALLET-CONCURRENT-WORKERS
+      - RB-WALLET-TIMEOUT-SAFE-RETRY
+      - RB-EXCEPTION-PERMANENT-FAILURE
+      - RB-EXCEPTION-RESOLVE
+      - RB-EXCEPTION-RETRY-UI
+  - id: UAT-VIEWS-DASHBOARD-01
+    title: Views and management dashboard
+    actor: ACTOR-AGENT
+    startPage: /cases
+    data:
+      - TD-VIEW-01
+      - TD-DASHBOARD-01
+    requirements:
+      - RB-VIEW-LIST-CREATE-PERSONAL
+      - RB-VIEW-TEAM-SHARED
+      - RB-VIEW-CROSS-ORG-DENY
+      - RB-DASHBOARD-KPI-LOAD
+      - RB-DASHBOARD-KPI-VALUE
+      - RB-DASHBOARD-CSV-EXPORT
+  - id: UAT-SECURITY-01
+    title: Security boundaries
+    actor: ACTOR-AGENT
+    startPage: /cases
+    data:
+      - TD-SECURITY-01
+    requirements:
+      - RB-SEC-CROSS-TEAM-DENY
+      - RB-SEC-CROSS-ORG-DENY
+      - RB-SEC-INTERNAL-COMMENT-HIDDEN
+      - RB-UI-LAYOUT-RESPONSIVE

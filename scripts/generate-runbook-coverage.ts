@@ -7,6 +7,7 @@ import { parse as parseYaml } from "yaml";
 
 const ROOT = process.cwd();
 const RB_RE = /RB-[A-Z0-9]+(?:-[A-Z0-9]+)+/g;
+const REPORT_DIR = path.join(ROOT, "tools", "case-simulator", "reports");
 
 type Requirement = {
   id: string;
@@ -21,6 +22,7 @@ type Requirement = {
     anchor?: string;
     procedureLevel?: string;
     section?: string;
+    journey?: string;
   };
 };
 
@@ -48,6 +50,10 @@ function collectFiles(dir: string, ext: string): string[] {
     else if (entry.name.endsWith(ext)) out.push(full);
   }
   return out.sort();
+}
+
+function toPosixRelative(fromDir: string, targetPath: string): string {
+  return path.relative(fromDir, targetPath).split(path.sep).join("/");
 }
 
 function main() {
@@ -85,13 +91,7 @@ function main() {
     }
   }
 
-  const resultsPath = path.join(
-    ROOT,
-    "tools",
-    "case-simulator",
-    "reports",
-    "simulator-results.json"
-  );
+  const resultsPath = path.join(REPORT_DIR, "simulator-results.json");
   const lastSimByReq = new Map<string, "pass" | "fail">();
   if (fs.existsSync(resultsPath)) {
     const raw = JSON.parse(fs.readFileSync(resultsPath, "utf8")) as {
@@ -111,22 +111,30 @@ function main() {
     const expected = (req.expectedLayers ?? []) as LayerKey[];
     const simulatorLinks = simCoverage.get(req.id) ?? [];
     const playwrightLinks = pwCoverage.get(req.id) ?? [];
+    const isManualOnly =
+      req.status === "manual_only" ||
+      (expected.length === 1 && expected[0] === "manual");
+
+    // Manual expectation is ownership, not execution evidence.
     const coveredLayers: Record<LayerKey, boolean> = {
       simulator: simulatorLinks.length > 0,
       playwright: playwrightLinks.length > 0,
-      // Unit discovery is not implemented; never claim unit coverage from expectedLayers alone.
       unit: false,
-      manual:
-        expected.includes("manual") || req.status === "manual_only",
+      manual: false,
     };
 
-    const coveredCount = expected.filter((layer) => coveredLayers[layer]).length;
-    const fullyCovered =
-      expected.length > 0 && coveredCount === expected.length;
+    const automationExpected = expected.filter((layer) => layer !== "manual");
+    const coveredCount = automationExpected.filter(
+      (layer) => coveredLayers[layer]
+    ).length;
+    const fullyAutomated =
+      automationExpected.length > 0 &&
+      coveredCount === automationExpected.length &&
+      !isManualOnly;
     const partiallyCovered =
-      coveredCount > 0 && coveredCount < expected.length;
+      coveredCount > 0 && coveredCount < automationExpected.length;
     const missing =
-      expected.length > 0 &&
+      automationExpected.length > 0 &&
       coveredCount === 0 &&
       req.status === "active" &&
       Boolean(req.automationRequired);
@@ -148,16 +156,41 @@ function main() {
       lastSimulatorResult = "not_run";
     }
 
-    const runbookLink = req.runbook?.file && req.runbook.anchor
-      ? `${req.runbook.file}#${req.runbook.anchor}`
-      : "";
+    const runbookFile = req.runbook?.file ?? "";
+    const runbookAnchor = req.runbook?.anchor ?? "";
+    const runbookLink =
+      runbookFile && runbookAnchor ? `${runbookFile}#${runbookAnchor}` : "";
+    const sectionLabel = req.runbook?.section
+      ? `${req.runbook.section} — ${req.title}`
+      : req.title;
+    const markdownHref =
+      runbookFile && runbookAnchor
+        ? `${toPosixRelative(REPORT_DIR, path.join(ROOT, runbookFile))}#${runbookAnchor}`
+        : "";
+
+    const coverageStatus = req.status === "blocked_ui"
+      ? "blocked_ui"
+      : isManualOnly
+        ? "manual_only"
+        : fullyAutomated
+          ? "fully_covered"
+          : partiallyCovered
+            ? "partial"
+            : missing
+              ? "missing"
+              : "unspecified";
 
     return {
       id: req.id,
       title: req.title,
       runbookSection: req.runbook?.section ?? "",
+      runbookFile,
+      runbookAnchor,
       runbookLink,
+      markdownHref,
+      sectionLabel,
       procedureLevel: req.runbook?.procedureLevel ?? "",
+      journey: req.runbook?.journey ?? "",
       area: req.area ?? "",
       status: req.status,
       expectedLayers: expected,
@@ -166,32 +199,25 @@ function main() {
         ? `${playwrightLinks.length} linked`
         : "—",
       unit: expected.includes("unit") ? "expected (undiscovered)" : "—",
-      manual: coveredLayers.manual ? "yes" : "—",
-      coverageStatus: req.status === "blocked_ui"
-        ? "blocked_ui"
-        : req.status === "manual_only"
-          ? "manual_only"
-          : fullyCovered
-            ? "fully_covered"
-            : partiallyCovered
-              ? "partial"
-              : missing
-                ? "missing"
-                : "unspecified",
+      manual: isManualOnly ? "expected (not run)" : "—",
+      coverageStatus,
       lastSimulatorResult,
-      fullyCovered,
+      fullyCovered: fullyAutomated,
       partiallyCovered,
       missing,
+      isManualOnly,
     };
   });
 
   const summary = {
     total: rows.length,
-    fullyCovered: rows.filter((r) => r.fullyCovered).length,
-    partiallyCovered: rows.filter((r) => r.partiallyCovered).length,
+    activeFullyAutomated: rows.filter(
+      (r) => r.status === "active" && r.fullyCovered
+    ).length,
+    partiallyAutomated: rows.filter((r) => r.partiallyCovered).length,
     missingRequiredAutomation: rows.filter((r) => r.missing).length,
-    manualOnly: rows.filter((r) => r.status === "manual_only").length,
-    blockedUi: rows.filter((r) => r.status === "blocked_ui").length,
+    blockedByUi: rows.filter((r) => r.status === "blocked_ui").length,
+    manualOnly: rows.filter((r) => r.isManualOnly).length,
     simulatorPass: rows.filter((r) => r.lastSimulatorResult === "pass").length,
     simulatorFail: rows.filter((r) => r.lastSimulatorResult === "fail").length,
     simulatorNotRun: rows.filter((r) => r.lastSimulatorResult === "not_run")
@@ -201,9 +227,8 @@ function main() {
     ).length,
   };
 
-  const outDir = path.join(ROOT, "tools", "case-simulator", "reports");
-  fs.mkdirSync(outDir, { recursive: true });
-  const jsonPath = path.join(outDir, "runbook-coverage.json");
+  fs.mkdirSync(REPORT_DIR, { recursive: true });
+  const jsonPath = path.join(REPORT_DIR, "runbook-coverage.json");
   fs.writeFileSync(
     jsonPath,
     JSON.stringify({ generatedAt: new Date().toISOString(), summary, rows }, null, 2)
@@ -216,27 +241,39 @@ function main() {
   md.push("");
   md.push("## Summary");
   md.push("");
-  for (const [key, value] of Object.entries(summary)) {
-    md.push(`- **${key}:** ${value}`);
-  }
+  md.push(`- **Total requirements:** ${summary.total}`);
+  md.push(`- **Active fully automated:** ${summary.activeFullyAutomated}`);
+  md.push(`- **Partially automated:** ${summary.partiallyAutomated}`);
+  md.push(
+    `- **Missing required automation:** ${summary.missingRequiredAutomation}`
+  );
+  md.push(`- **Blocked by UI:** ${summary.blockedByUi}`);
+  md.push(`- **Manual only:** ${summary.manualOnly}`);
+  md.push(`- **Simulator pass:** ${summary.simulatorPass}`);
+  md.push(`- **Simulator fail:** ${summary.simulatorFail}`);
+  md.push(`- **Simulator not run:** ${summary.simulatorNotRun}`);
+  md.push(`- **Simulator not required:** ${summary.simulatorNotRequired}`);
   md.push("");
   md.push(
-    "| Requirement | Runbook | Simulator | Playwright | Unit | Manual | Coverage | Last simulator result |"
+    "| Requirement | Journey | Runbook | Simulator | Playwright | Unit | Manual | Coverage | Last simulator result |"
   );
-  md.push("| --- | --- | --- | --- | --- | --- | --- | --- |");
+  md.push("| --- | --- | --- | --- | --- | --- | --- | --- | --- |");
   for (const row of rows) {
+    const runbookCell = row.markdownHref
+      ? `[${row.sectionLabel.replace(/\|/g, "\\|")}](${row.markdownHref})`
+      : "—";
     md.push(
-      `| \`${row.id}\` | ${row.runbookLink || row.runbookSection || "—"} | ${row.simulator} | ${row.playwright} | ${row.unit} | ${row.manual} | ${row.coverageStatus} | ${row.lastSimulatorResult} |`
+      `| \`${row.id}\` | \`${row.journey || "—"}\` | ${runbookCell} | ${row.simulator} | ${row.playwright} | ${row.unit} | ${row.manual} | ${row.coverageStatus} | ${row.lastSimulatorResult} |`
     );
   }
   md.push("");
-  const mdPath = path.join(outDir, "runbook-coverage.md");
+  const mdPath = path.join(REPORT_DIR, "runbook-coverage.md");
   fs.writeFileSync(mdPath, md.join("\n"));
 
   console.log(`Wrote ${path.relative(ROOT, jsonPath)}`);
   console.log(`Wrote ${path.relative(ROOT, mdPath)}`);
   console.log(
-    `Summary: fully=${summary.fullyCovered} partial=${summary.partiallyCovered} missing=${summary.missingRequiredAutomation} blocked_ui=${summary.blockedUi}`
+    `Summary: activeFullyAutomated=${summary.activeFullyAutomated} partial=${summary.partiallyAutomated} missing=${summary.missingRequiredAutomation} blocked_ui=${summary.blockedByUi} manualOnly=${summary.manualOnly}`
   );
 }
 

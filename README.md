@@ -152,7 +152,7 @@ See `tools/case-simulator/README.md` for details.
 `sla.refresh_case`, `notification.dispatch` (see `src/lib/jobs/worker.ts`).
 
 **Ops runbook:** [docs/pilot-ops.md](docs/pilot-ops.md) (env checklist, worker/cron, health, rollback).
-**Full-feature test runbook:** [docs/system-full-feature-test-runbook.md](docs/system-full-feature-test-runbook.md) (stable `RB-*` IDs; sync with `npm run test:runbook-sync`).
+**Full-feature test runbook:** [docs/system-full-feature-test-runbook.md](docs/system-full-feature-test-runbook.md) (stable `RB-*` IDs grouped into UAT journeys; sync with `npm run test:runbook-sync`).
 **Admin console:** [docs/admin-console.md](docs/admin-console.md).
 **Approval matrix / maker-checker:** [docs/approval-matrix.md](docs/approval-matrix.md), [docs/maker-checker.md](docs/maker-checker.md).
 **Wallet provider (mock):** [docs/wallet-provider-interface.md](docs/wallet-provider-interface.md), [docs/mock-wallet-provider.md](docs/mock-wallet-provider.md).

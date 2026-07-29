@@ -23,13 +23,18 @@ const SUPPORTED_LAYERS = new Set([
   "unit",
   "manual",
 ]);
-const SUPPORTED_PROCEDURE_LEVELS = new Set(["index_only", "detailed"]);
+const SUPPORTED_PROCEDURE_LEVELS = new Set([
+  "index_only",
+  "draft",
+  "detailed",
+]);
 
 type RunbookMeta = {
   file: string;
   anchor: string;
   procedureLevel: string;
   section?: string;
+  journey?: string;
 };
 
 type Requirement = {
@@ -78,6 +83,45 @@ function countHtmlAnchor(text: string, anchor: string): number {
     "gi"
   );
   return (text.match(htmlId) ?? []).length;
+}
+
+/**
+ * Anchor must immediately precede a markdown heading that starts with the same RB-* ID.
+ */
+function resolveAnchorHeading(
+  text: string,
+  anchor: string
+): { ok: true; headingId: string } | { ok: false; detail: string } {
+  const marker = new RegExp(
+    `<a\\s+id=["']${escapeRegExp(anchor)}["']\\s*/?>\\s*`,
+    "i"
+  );
+  const match = marker.exec(text);
+  if (!match || match.index === undefined) {
+    return { ok: false, detail: "anchor not found" };
+  }
+
+  const after = text.slice(match.index + match[0].length);
+  const headingMatch = /^(?:[ \t]*\r?\n)*[ \t]*#{1,6}[ \t]+([^\r\n]+)/m.exec(
+    after
+  );
+  if (!headingMatch) {
+    return {
+      ok: false,
+      detail: "no markdown heading immediately follows the anchor",
+    };
+  }
+
+  const heading = headingMatch[1].trim();
+  const headingIdMatch = /^(RB-[A-Z0-9]+(?:-[A-Z0-9]+)+)\b/.exec(heading);
+  if (!headingIdMatch) {
+    return {
+      ok: false,
+      detail: `following heading does not start with an RB-* id ("${heading}")`,
+    };
+  }
+
+  return { ok: true, headingId: headingIdMatch[1] };
 }
 
 function escapeRegExp(value: string): string {
@@ -131,20 +175,32 @@ function main() {
       continue;
     }
 
+    if (!req.runbook.journey) {
+      errors.push(`${req.id} missing runbook.journey`);
+    } else if (!/^UAT-[A-Z0-9]+(?:-[A-Z0-9]+)*-\d{2}$/.test(req.runbook.journey)) {
+      errors.push(
+        `${req.id} has malformed journey id "${req.runbook.journey}"`
+      );
+    }
+
     if (!SUPPORTED_PROCEDURE_LEVELS.has(req.runbook.procedureLevel)) {
       errors.push(
         `${req.id} has unsupported procedureLevel "${req.runbook.procedureLevel}"`
       );
     }
 
-    const needsDetailed =
+    const needsProcedure =
       req.priority === "critical" ||
       req.status === "blocked_ui" ||
       ((req.expectedLayers ?? []).includes("simulator") &&
         (req.expectedLayers ?? []).includes("playwright"));
-    if (needsDetailed && req.runbook.procedureLevel !== "detailed") {
+    if (
+      needsProcedure &&
+      req.runbook.procedureLevel !== "draft" &&
+      req.runbook.procedureLevel !== "detailed"
+    ) {
       errors.push(
-        `${req.id} must use procedureLevel detailed (critical, blocked_ui, or dual-layer)`
+        `${req.id} must use procedureLevel draft or detailed (critical, blocked_ui, or dual-layer)`
       );
     }
 
@@ -173,12 +229,34 @@ function main() {
       errors.push(
         `${req.id} anchor "#${req.runbook.anchor}" appears ${count} times in ${req.runbook.file}`
       );
+    } else {
+      const paired = resolveAnchorHeading(runbookText, req.runbook.anchor);
+      if (!paired.ok) {
+        errors.push(
+          `${req.id} anchor #${req.runbook.anchor}: ${paired.detail}`
+        );
+      } else if (paired.headingId !== req.id) {
+        errors.push(
+          `${req.id} anchor #${req.runbook.anchor} points to ${paired.headingId}`
+        );
+      }
     }
 
-    if (req.status !== "retired" && !runbookText.includes(req.id)) {
-      errors.push(
-        `Requirement ${req.id} text missing from ${req.runbook.file}`
+    if (req.runbook.journey) {
+      const journeyAnchor = req.runbook.journey.toLowerCase();
+      const journeyHeading = new RegExp(
+        `^##\\s+${escapeRegExp(req.runbook.journey)}\\b`,
+        "m"
       );
+      if (countHtmlAnchor(runbookText, journeyAnchor) !== 1) {
+        errors.push(
+          `${req.id} journey ${req.runbook.journey} missing unique anchor #${journeyAnchor}`
+        );
+      } else if (!journeyHeading.test(runbookText)) {
+        errors.push(
+          `${req.id} journey heading "## ${req.runbook.journey}" missing from ${req.runbook.file}`
+        );
+      }
     }
   }
 
