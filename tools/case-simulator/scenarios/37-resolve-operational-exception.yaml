@@ -49,10 +49,11 @@ actions:
     params: { caseId: $caseId }
   - actor: agent
     action: drain_jobs
-    params: { limit: 20 }
-  - actor: agent
-    action: drain_jobs
-    params: { limit: 20 }
+    params:
+      limit: 20
+      caseId: $caseId
+      untilExecutionStatus: FAILED_FINAL
+      timeoutMs: 20000
   - actor: agent
     action: list_exceptions
     saveAs: exceptionId

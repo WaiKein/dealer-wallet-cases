@@ -267,12 +267,27 @@ export async function runAction(params: {
       );
     }
     case "drain_jobs": {
-      return params.baseClient.request(
-        "POST",
-        "/api/jobs/tick",
-        { limit: p.limit ?? 50, workerId: `sim-drain-${Date.now()}` },
-        { "x-jobs-tick-secret": params.testControlSecret }
-      );
+      return drainJobsUntil({
+        baseClient: params.baseClient,
+        actorClient: client,
+        testControlSecret: params.testControlSecret,
+        limit: Number(p.limit ?? 50),
+        workerPrefix: "sim-drain",
+        untilExecutionStatus:
+          typeof p.untilExecutionStatus === "string"
+            ? p.untilExecutionStatus
+            : undefined,
+        caseId:
+          typeof p.caseId === "string"
+            ? p.caseId
+            : typeof params.vars.caseId === "string"
+              ? params.vars.caseId
+              : undefined,
+        timeoutMs: Number(p.timeoutMs ?? 20_000),
+        // Default allow tick-level job failures (retry / permanent-fail scenarios).
+        // Opt in with failOnTickFailures: true when a clean drain is required.
+        failOnTickFailures: p.failOnTickFailures === true,
+      });
     }
     case "enqueue_test_job": {
       return params.baseClient.request(
@@ -551,12 +566,33 @@ export async function runAction(params: {
     case "run_integration_worker":
     case "run_notification_worker":
     case "generate_email_notification": {
-      return params.baseClient.request(
-        "POST",
-        "/api/jobs/tick",
-        { limit: p.limit ?? 50, workerId: `sim-worker-${Date.now()}` },
-        { "x-jobs-tick-secret": params.testControlSecret }
-      );
+      return drainJobsUntil({
+        baseClient: params.baseClient,
+        actorClient: client,
+        testControlSecret: params.testControlSecret,
+        limit: Number(p.limit ?? 50),
+        workerPrefix: `sim-${params.action}`,
+        untilExecutionStatus:
+          typeof p.untilExecutionStatus === "string"
+            ? p.untilExecutionStatus
+            : undefined,
+        caseId:
+          typeof p.caseId === "string"
+            ? p.caseId
+            : typeof params.vars.caseId === "string"
+              ? params.vars.caseId
+              : undefined,
+        // Single-pass worker actions stay one tick unless a terminal status is requested.
+        timeoutMs:
+          typeof p.untilExecutionStatus === "string"
+            ? Number(p.timeoutMs ?? 20_000)
+            : 0,
+        failOnTickFailures: p.failOnTickFailures === true,
+        maxTicks:
+          typeof p.untilExecutionStatus === "string"
+            ? undefined
+            : 1,
+      });
     }
     case "run_status_inquiry": {
       return client.request(
@@ -685,4 +721,174 @@ export async function runAction(params: {
     default:
       throw new Error(`Unknown action: ${params.action}`);
   }
+}
+
+type TickResult = {
+  processed?: number;
+  succeeded?: number;
+  failed?: number;
+};
+
+async function drainJobsUntil(params: {
+  baseClient: ApiClient;
+  actorClient: ApiClient;
+  testControlSecret: string;
+  limit: number;
+  workerPrefix: string;
+  untilExecutionStatus?: string;
+  caseId?: string;
+  timeoutMs: number;
+  failOnTickFailures?: boolean;
+  maxTicks?: number;
+}): Promise<{
+  ok: boolean;
+  status: number;
+  data: unknown;
+  raw: unknown;
+  correlationId?: string;
+  saved?: unknown;
+  errorMessage?: string;
+  errorCode?: string;
+}> {
+  const started = Date.now();
+  const ticks: TickResult[] = [];
+  let lastTick: Awaited<ReturnType<ApiClient["request"]>> | null = null;
+  let ticksRun = 0;
+  const maxTicks = params.maxTicks ?? Number.POSITIVE_INFINITY;
+
+  while (ticksRun < maxTicks) {
+    if (params.timeoutMs > 0 && Date.now() - started > params.timeoutMs) {
+      break;
+    }
+
+    lastTick = await params.baseClient.request(
+      "POST",
+      "/api/jobs/tick",
+      {
+        limit: params.limit,
+        workerId: `${params.workerPrefix}-${Date.now()}-${ticksRun}`,
+      },
+      { "x-jobs-tick-secret": params.testControlSecret }
+    );
+    ticksRun += 1;
+
+    if (!lastTick.ok) {
+      return lastTick;
+    }
+
+    const tickData = (lastTick.data ?? {}) as TickResult;
+    ticks.push(tickData);
+
+    if (params.failOnTickFailures && Number(tickData.failed ?? 0) > 0) {
+      return {
+        ok: false,
+        status: lastTick.status,
+        data: {
+          ticks,
+          last: tickData,
+        },
+        raw: lastTick.raw,
+        correlationId: lastTick.correlationId,
+        errorMessage: `Job tick reported ${tickData.failed} failed job(s).`,
+        errorCode: "JOB_TICK_FAILED",
+      };
+    }
+
+    if (!params.untilExecutionStatus) {
+      break;
+    }
+
+    if (!params.caseId) {
+      return {
+        ok: false,
+        status: 400,
+        data: { ticks },
+        raw: { ticks },
+        errorMessage:
+          "drain_jobs untilExecutionStatus requires caseId (or $caseId in vars).",
+        errorCode: "VALIDATION_ERROR",
+      };
+    }
+
+    const execution = await params.actorClient.request<{
+      execution?: { status?: string; attempt_count?: number } | null;
+    }>("GET", `/api/v1/cases/${params.caseId}/execution`);
+
+    const status = execution.data?.execution?.status;
+    if (execution.ok && status === params.untilExecutionStatus) {
+      return {
+        ok: true,
+        status: 200,
+        data: {
+          ticks,
+          executionStatus: status,
+          attempt_count: execution.data?.execution?.attempt_count,
+          ticksRun,
+        },
+        raw: {
+          ticks,
+          execution: execution.data,
+        },
+        correlationId: lastTick.correlationId,
+        saved: {
+          executionStatus: status,
+          ticksRun,
+        },
+      };
+    }
+
+    // Idle tick with no work and still not terminal → keep trying briefly,
+    // but stop once timeout elapses.
+    if (Number(tickData.processed ?? 0) === 0) {
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+  }
+
+  if (params.untilExecutionStatus) {
+    let status: string | undefined;
+    if (params.caseId) {
+      const execution = await params.actorClient.request<{
+        execution?: { status?: string; attempt_count?: number } | null;
+      }>("GET", `/api/v1/cases/${params.caseId}/execution`);
+      status = execution.data?.execution?.status;
+      if (execution.ok && status === params.untilExecutionStatus) {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            ticks,
+            executionStatus: status,
+            attempt_count: execution.data?.execution?.attempt_count,
+            ticksRun,
+          },
+          raw: { ticks, execution: execution.data },
+          correlationId: lastTick?.correlationId,
+        };
+      }
+    }
+
+    return {
+      ok: false,
+      status: 408,
+      data: {
+        ticks,
+        executionStatus: status,
+        ticksRun,
+        waitedMs: Date.now() - started,
+      },
+      raw: { ticks, executionStatus: status },
+      correlationId: lastTick?.correlationId,
+      errorMessage: `Timed out waiting for execution status ${params.untilExecutionStatus} (last=${status ?? "unknown"}).`,
+      errorCode: "TIMEOUT",
+    };
+  }
+
+  return (
+    lastTick ?? {
+      ok: true,
+      status: 200,
+      data: { ticks, ticksRun },
+      raw: { ticks, ticksRun },
+    }
+  );
 }

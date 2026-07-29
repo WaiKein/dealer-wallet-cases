@@ -54,10 +54,11 @@ actions:
       caseId: $caseId
   - actor: agent
     action: drain_jobs
-    params: { limit: 20 }
-  - actor: agent
-    action: drain_jobs
-    params: { limit: 20 }
+    params:
+      limit: 20
+      caseId: $caseId
+      untilExecutionStatus: SUCCEEDED
+      timeoutMs: 20000
 assertions:
   - type: case_status
     actor: agent
