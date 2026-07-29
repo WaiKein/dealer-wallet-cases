@@ -1,544 +1,783 @@
 version: 1
-updatedAt: "2026-07-29"
+updatedAt: 2026-07-29
 requirements:
-  # Authentication / navigation (Playwright-oriented)
   - id: RB-AUTH-LOGIN-VALID
     title: Valid user can sign in
-    runbookSection: "1.1"
     area: auth
     priority: critical
     automationRequired: true
-    expectedLayers: [playwright]
+    expectedLayers:
+      - playwright
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-auth-login-valid
+      procedureLevel: detailed
+      section: "1.1"
   - id: RB-NAV-ADMIN-DENIED
     title: Non-admin is redirected away from administration
-    runbookSection: "1.2"
     area: security
     priority: critical
     automationRequired: true
-    expectedLayers: [playwright]
+    expectedLayers:
+      - playwright
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-nav-admin-denied
+      procedureLevel: detailed
+      section: "1.2"
   - id: RB-NAV-ADMIN-CATEGORIES
     title: Admin locates Categories from overview or navigation
-    runbookSection: "15.1"
     area: navigation
     priority: critical
     automationRequired: true
-    expectedLayers: [playwright]
+    expectedLayers:
+      - playwright
     status: blocked_ui
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-nav-admin-categories
+      procedureLevel: detailed
+      section: "15.1"
   - id: RB-ADMIN-CATEGORY-CREATE
     title: Admin creates a category
-    runbookSection: "15.21"
     area: admin
     priority: critical
     automationRequired: true
-    expectedLayers: [playwright]
+    expectedLayers:
+      - playwright
     status: blocked_ui
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-admin-category-create
+      procedureLevel: detailed
+      section: "15.21"
   - id: RB-ADMIN-CATEGORY-EDIT
     title: Admin edits an existing category
-    runbookSection: "15.21"
     area: admin
     priority: high
     automationRequired: true
-    expectedLayers: [playwright]
+    expectedLayers:
+      - playwright
     status: blocked_ui
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-admin-category-edit
+      procedureLevel: detailed
+      section: "15.21"
   - id: RB-UI-SUBCATEGORY-EDIT
     title: Admin edits an existing subcategory
-    runbookSection: "15.22"
     area: admin
     priority: high
     automationRequired: true
-    expectedLayers: [playwright]
+    expectedLayers:
+      - playwright
     status: blocked_ui
-
-  # Case workflow
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-ui-subcategory-edit
+      procedureLevel: detailed
+      section: "15.22"
   - id: RB-CASE-CREATE-VALID
     title: Requester creates a valid adjustment case
-    runbookSection: "2.1"
     area: cases
     priority: critical
     automationRequired: true
-    expectedLayers: [simulator, playwright]
+    expectedLayers:
+      - simulator
+      - playwright
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-case-create-valid
+      procedureLevel: detailed
+      section: "2.1"
   - id: RB-CASE-CLAIM
     title: Agent claims an unassigned group case
-    runbookSection: "2.2"
     area: cases
     priority: critical
     automationRequired: true
-    expectedLayers: [simulator, playwright]
+    expectedLayers:
+      - simulator
+      - playwright
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-case-claim
+      procedureLevel: detailed
+      section: "2.2"
   - id: RB-CASE-ACKNOWLEDGE
     title: Assigned agent acknowledges a case
-    runbookSection: "2.3"
     area: cases
     priority: critical
     automationRequired: true
-    expectedLayers: [simulator, playwright]
+    expectedLayers:
+      - simulator
+      - playwright
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-case-acknowledge
+      procedureLevel: detailed
+      section: "2.3"
   - id: RB-CASE-WAIT-REQUESTER
     title: Case can wait for requester information
-    runbookSection: "2.4"
     area: cases
     priority: high
     automationRequired: true
-    expectedLayers: [simulator, playwright]
+    expectedLayers:
+      - simulator
+      - playwright
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-case-wait-requester
+      procedureLevel: detailed
+      section: "2.4"
   - id: RB-CASE-RESOLVE
     title: Approved case can be resolved after successful execution
-    runbookSection: "2.5"
     area: cases
     priority: critical
     automationRequired: true
-    expectedLayers: [simulator, playwright]
+    expectedLayers:
+      - simulator
+      - playwright
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-case-resolve
+      procedureLevel: detailed
+      section: "2.5"
   - id: RB-CASE-REOPEN
     title: Resolved case can be reopened
-    runbookSection: "2.6"
     area: cases
     priority: high
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-case-reopen
+      procedureLevel: index_only
+      section: "2.6"
   - id: RB-CASE-CONCURRENT-CLAIM
     title: Concurrent claims result in a single assignee
-    runbookSection: "2.7"
     area: cases
     priority: critical
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-case-concurrent-claim
+      procedureLevel: detailed
+      section: "2.7"
   - id: RB-CASE-CONCURRENT-UPDATE
     title: Concurrent case updates are conflict-safe
-    runbookSection: "2.8"
     area: cases
     priority: high
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-case-concurrent-update
+      procedureLevel: index_only
+      section: "2.8"
   - id: RB-CASE-STALE-VERSION
     title: Stale case version is rejected
-    runbookSection: "2.9"
     area: cases
     priority: high
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-case-stale-version
+      procedureLevel: index_only
+      section: "2.9"
   - id: RB-CASE-TIMELINE-VISIBLE
     title: Status history timeline is visible on the case
-    runbookSection: "2.10"
     area: cases
     priority: high
     automationRequired: true
-    expectedLayers: [playwright]
+    expectedLayers:
+      - playwright
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-case-timeline-visible
+      procedureLevel: index_only
+      section: "2.10"
   - id: RB-CASE-AUTO-ASSIGN-GROUP
     title: Submitted case is auto-assigned to a matching group
-    runbookSection: "2.11"
     area: cases
     priority: critical
     automationRequired: true
-    expectedLayers: [playwright]
+    expectedLayers:
+      - playwright
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-case-auto-assign-group
+      procedureLevel: detailed
+      section: "2.11"
   - id: RB-CASE-PENDING-APPROVAL-NOTIFY
     title: Approver is notified when a case reaches pending approval
-    runbookSection: "2.12"
     area: cases
     priority: high
     automationRequired: true
-    expectedLayers: [playwright]
+    expectedLayers:
+      - playwright
     status: active
-
-  # Approvals
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-case-pending-approval-notify
+      procedureLevel: index_only
+      section: "2.12"
   - id: RB-APPROVAL-HAPPY
     title: Approver completes a happy-path approval
-    runbookSection: "3.1"
     area: approvals
     priority: critical
     automationRequired: true
-    expectedLayers: [simulator, playwright]
+    expectedLayers:
+      - simulator
+      - playwright
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-approval-happy
+      procedureLevel: detailed
+      section: "3.1"
   - id: RB-APPROVAL-REJECT
     title: Approver can reject a pending case
-    runbookSection: "3.2"
     area: approvals
     priority: critical
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-approval-reject
+      procedureLevel: detailed
+      section: "3.2"
   - id: RB-APPROVAL-DUPLICATE-SUBMIT
     title: Duplicate approval submission is rejected or idempotent
-    runbookSection: "3.3"
     area: approvals
     priority: high
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-approval-duplicate-submit
+      procedureLevel: index_only
+      section: "3.3"
   - id: RB-APPROVAL-DUPLICATE-REQUEST
     title: Duplicate approval request is blocked
-    runbookSection: "3.4"
     area: approvals
     priority: high
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-approval-duplicate-request
+      procedureLevel: index_only
+      section: "3.4"
   - id: RB-APPROVAL-SEQUENTIAL-TWO-LEVEL
     title: High-value cases require sequential two-level approval
-    runbookSection: "3.5"
     area: approvals
     priority: critical
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-approval-sequential-two-level
+      procedureLevel: detailed
+      section: "3.5"
   - id: RB-APPROVAL-MAKER-CHECKER-REQUESTER
     title: Requester cannot approve their own case
-    runbookSection: "3.6"
     area: approvals
     priority: critical
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-approval-maker-checker-requester
+      procedureLevel: detailed
+      section: "3.6"
   - id: RB-APPROVAL-MAKER-CHECKER-AGENT
     title: Assigned agent cannot approve the case they processed
-    runbookSection: "3.7"
     area: approvals
     priority: critical
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-approval-maker-checker-agent
+      procedureLevel: detailed
+      section: "3.7"
   - id: RB-APPROVAL-LIMIT-EXCEEDED
     title: Approval is denied when amount exceeds approver limit
-    runbookSection: "3.8"
     area: approvals
     priority: high
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-approval-limit-exceeded
+      procedureLevel: index_only
+      section: "3.8"
   - id: RB-APPROVAL-DELEGATION-VALID
     title: Valid delegated approval is accepted
-    runbookSection: "3.9"
     area: approvals
     priority: high
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-approval-delegation-valid
+      procedureLevel: index_only
+      section: "3.9"
   - id: RB-APPROVAL-DELEGATION-EXPIRED
     title: Expired delegation cannot approve
-    runbookSection: "3.10"
     area: approvals
     priority: high
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-approval-delegation-expired
+      procedureLevel: index_only
+      section: "3.10"
   - id: RB-ADMIN-APPROVAL-RULE-CREATE
     title: Administrator configures an approval rule
-    runbookSection: "3.11"
     area: admin
     priority: critical
     automationRequired: true
-    expectedLayers: [playwright]
+    expectedLayers:
+      - playwright
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-admin-approval-rule-create
+      procedureLevel: detailed
+      section: "3.11"
   - id: RB-ADMIN-CONFIG-VERSION-RETAINED
     title: Case retains approval rule version selected at request time
-    runbookSection: "3.12"
     area: admin
     priority: high
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
-  # SLA
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-admin-config-version-retained
+      procedureLevel: index_only
+      section: "3.12"
   - id: RB-SLA-FIRST-RESPONSE-BREACH
     title: First-response SLA breach is detected
-    runbookSection: "4.1"
     area: sla
     priority: high
     automationRequired: true
-    expectedLayers: [simulator, playwright]
+    expectedLayers:
+      - simulator
+      - playwright
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-sla-first-response-breach
+      procedureLevel: detailed
+      section: "4.1"
   - id: RB-SLA-RESOLUTION-PAUSE-RESUME
     title: Resolution SLA pauses while waiting for requester
-    runbookSection: "4.2"
     area: sla
     priority: high
     automationRequired: true
-    expectedLayers: [simulator, playwright]
+    expectedLayers:
+      - simulator
+      - playwright
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-sla-resolution-pause-resume
+      procedureLevel: detailed
+      section: "4.2"
   - id: RB-SLA-BREACHED-QUEUE
     title: Breached cases appear in the agent workspace queue
-    runbookSection: "4.3"
     area: sla
     priority: high
     automationRequired: true
-    expectedLayers: [playwright]
+    expectedLayers:
+      - playwright
     status: active
-
-  # Security
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-sla-breached-queue
+      procedureLevel: index_only
+      section: "4.3"
   - id: RB-SEC-CROSS-TEAM-DENY
     title: Unauthorized cross-team case access is denied
-    runbookSection: "5.1"
     area: security
     priority: critical
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-sec-cross-team-deny
+      procedureLevel: detailed
+      section: "5.1"
   - id: RB-SEC-CROSS-ORG-DENY
     title: Unauthorized cross-organisation access is denied
-    runbookSection: "5.2"
     area: security
     priority: critical
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-sec-cross-org-deny
+      procedureLevel: detailed
+      section: "5.2"
   - id: RB-SEC-INTERNAL-COMMENT-HIDDEN
     title: Internal comments are hidden from requesters
-    runbookSection: "5.3"
     area: security
     priority: high
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
-  # Reliability / jobs / idempotency
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-sec-internal-comment-hidden
+      procedureLevel: index_only
+      section: "5.3"
   - id: RB-JOB-RETRY
     title: Failed background job is retried
-    runbookSection: "6.1"
     area: reliability
     priority: high
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-job-retry
+      procedureLevel: index_only
+      section: "6.1"
   - id: RB-JOB-DEAD-LETTER
     title: Exhausted job moves to dead-letter
-    runbookSection: "6.2"
     area: reliability
     priority: high
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-job-dead-letter
+      procedureLevel: index_only
+      section: "6.2"
   - id: RB-API-IDEMPOTENCY-KEY
     title: Duplicate Idempotency-Key returns consistent result
-    runbookSection: "6.3"
     area: reliability
     priority: critical
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
-  # Wallet / integration
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-api-idempotency-key
+      procedureLevel: detailed
+      section: "6.3"
   - id: RB-WALLET-SUCCESS
     title: Mock wallet execute succeeds
-    runbookSection: "7.1"
     area: wallet
     priority: critical
     automationRequired: true
-    expectedLayers: [simulator, playwright]
+    expectedLayers:
+      - simulator
+      - playwright
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-wallet-success
+      procedureLevel: detailed
+      section: "7.1"
   - id: RB-WALLET-TEMP-FAILURE
     title: Temporary wallet failure is retryable
-    runbookSection: "7.2"
     area: wallet
     priority: high
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-wallet-temp-failure
+      procedureLevel: index_only
+      section: "7.2"
   - id: RB-WALLET-RETRY-SUCCESS
     title: Wallet retries then succeeds for the same key
-    runbookSection: "7.3"
     area: wallet
     priority: high
     automationRequired: true
-    expectedLayers: [simulator, playwright]
+    expectedLayers:
+      - simulator
+      - playwright
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-wallet-retry-success
+      procedureLevel: detailed
+      section: "7.3"
   - id: RB-WALLET-UNKNOWN-INQUIRY
     title: Uncertain timeout requires status inquiry
-    runbookSection: "7.4"
     area: wallet
     priority: critical
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-wallet-unknown-inquiry
+      procedureLevel: detailed
+      section: "7.4"
   - id: RB-WALLET-EXEC-AFTER-APPROVAL
     title: Approval queues wallet execution to SUCCEEDED
-    runbookSection: "7.5"
     area: wallet
     priority: critical
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-wallet-exec-after-approval
+      procedureLevel: detailed
+      section: "7.5"
   - id: RB-WALLET-EXEC-IDEMPOTENT
     title: Duplicate wallet execution is idempotent
-    runbookSection: "7.6"
     area: wallet
     priority: critical
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-wallet-exec-idempotent
+      procedureLevel: detailed
+      section: "7.6"
   - id: RB-WALLET-CONCURRENT-WORKERS
     title: Concurrent integration workers leave a single success
-    runbookSection: "7.7"
     area: wallet
     priority: high
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-wallet-concurrent-workers
+      procedureLevel: index_only
+      section: "7.7"
   - id: RB-WALLET-TIMEOUT-SAFE-RETRY
     title: Confirmed non-processing timeout allows safe retry
-    runbookSection: "7.8"
     area: wallet
     priority: high
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
-  # Exceptions
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-wallet-timeout-safe-retry
+      procedureLevel: index_only
+      section: "7.8"
   - id: RB-EXCEPTION-PERMANENT-FAILURE
     title: Permanent wallet failure creates an operations exception
-    runbookSection: "8.1"
     area: exceptions
     priority: critical
     automationRequired: true
-    expectedLayers: [simulator, playwright]
+    expectedLayers:
+      - simulator
+      - playwright
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-exception-permanent-failure
+      procedureLevel: detailed
+      section: "8.1"
   - id: RB-EXCEPTION-RESOLVE
     title: Operations can resolve an operational exception
-    runbookSection: "8.2"
     area: exceptions
     priority: critical
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-exception-resolve
+      procedureLevel: detailed
+      section: "8.2"
   - id: RB-EXCEPTION-RETRY-UI
     title: Team lead can retry a retryable failure from exceptions UI
-    runbookSection: "8.3"
     area: exceptions
     priority: high
     automationRequired: true
-    expectedLayers: [playwright]
+    expectedLayers:
+      - playwright
     status: active
-
-  # Email / notifications
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-exception-retry-ui
+      procedureLevel: index_only
+      section: "8.3"
   - id: RB-EMAIL-OUTBOX-DELIVER
     title: Email outbox row is created when flag enabled
-    runbookSection: "9.1"
     area: email
     priority: high
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-email-outbox-deliver
+      procedureLevel: index_only
+      section: "9.1"
   - id: RB-EMAIL-DEDUPE
     title: Duplicate email notifications are suppressed
-    runbookSection: "9.2"
     area: email
     priority: high
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
-  # Views / dashboard
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-email-dedupe
+      procedureLevel: index_only
+      section: "9.2"
   - id: RB-VIEW-LIST-CREATE-PERSONAL
     title: User can list system views and create a personal view
-    runbookSection: "10.1"
     area: views
     priority: high
     automationRequired: true
-    expectedLayers: [simulator, playwright]
+    expectedLayers:
+      - simulator
+      - playwright
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-view-list-create-personal
+      procedureLevel: detailed
+      section: "10.1"
   - id: RB-VIEW-TEAM-SHARED
     title: Team member can create and load a team-scoped view
-    runbookSection: "10.2"
     area: views
     priority: high
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-view-team-shared
+      procedureLevel: index_only
+      section: "10.2"
   - id: RB-VIEW-CROSS-ORG-DENY
     title: Cross-organisation saved view access is denied
-    runbookSection: "10.3"
     area: views
     priority: critical
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-view-cross-org-deny
+      procedureLevel: detailed
+      section: "10.3"
   - id: RB-DASHBOARD-KPI-LOAD
     title: Authorised user can load management dashboard KPIs
-    runbookSection: "11.1"
     area: dashboard
     priority: high
     automationRequired: true
-    expectedLayers: [simulator, playwright]
+    expectedLayers:
+      - simulator
+      - playwright
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-dashboard-kpi-load
+      procedureLevel: detailed
+      section: "11.1"
   - id: RB-DASHBOARD-KPI-VALUE
     title: Dashboard KPI values reflect submitted cases
-    runbookSection: "11.2"
     area: dashboard
     priority: high
     automationRequired: true
-    expectedLayers: [simulator]
+    expectedLayers:
+      - simulator
     status: active
-
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-dashboard-kpi-value
+      procedureLevel: index_only
+      section: "11.2"
   - id: RB-DASHBOARD-CSV-EXPORT
     title: Management dashboard CSV export downloads safely
-    runbookSection: "11.3"
     area: dashboard
     priority: medium
     automationRequired: true
-    expectedLayers: [playwright]
+    expectedLayers:
+      - playwright
     status: blocked_ui
-
-  # Manual / visual
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-dashboard-csv-export
+      procedureLevel: detailed
+      section: "11.3"
   - id: RB-UI-LAYOUT-RESPONSIVE
     title: Primary pages remain usable on desktop and mobile widths
-    runbookSection: "12.1"
     area: ui
     priority: medium
     automationRequired: false
-    expectedLayers: [manual]
+    expectedLayers:
+      - manual
     status: manual_only
+    runbook:
+      file: docs/system-full-feature-test-runbook.md
+      anchor: rb-ui-layout-responsive
+      procedureLevel: index_only
+      section: "12.1"

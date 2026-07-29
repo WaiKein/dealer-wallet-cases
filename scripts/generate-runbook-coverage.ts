@@ -11,12 +11,17 @@ const RB_RE = /RB-[A-Z0-9]+(?:-[A-Z0-9]+)+/g;
 type Requirement = {
   id: string;
   title: string;
-  runbookSection?: string;
   area?: string;
   priority?: string;
   automationRequired?: boolean;
   expectedLayers?: string[];
   status: string;
+  runbook?: {
+    file?: string;
+    anchor?: string;
+    procedureLevel?: string;
+    section?: string;
+  };
 };
 
 type ScenarioDoc = {
@@ -31,6 +36,8 @@ type ScenarioResult = {
   runbookRefs?: string[];
   ok?: boolean;
 };
+
+type LayerKey = "simulator" | "playwright" | "unit" | "manual";
 
 function collectFiles(dir: string, ext: string): string[] {
   if (!fs.existsSync(dir)) return [];
@@ -85,7 +92,7 @@ function main() {
     "reports",
     "simulator-results.json"
   );
-  const lastByReq = new Map<string, "pass" | "fail" | "not_run">();
+  const lastSimByReq = new Map<string, "pass" | "fail">();
   if (fs.existsSync(resultsPath)) {
     const raw = JSON.parse(fs.readFileSync(resultsPath, "utf8")) as {
       results?: ScenarioResult[];
@@ -93,61 +100,105 @@ function main() {
     for (const result of raw.results ?? []) {
       const status = result.ok ? "pass" : "fail";
       for (const ref of result.runbookRefs ?? []) {
-        const prev = lastByReq.get(ref);
+        const prev = lastSimByReq.get(ref);
         if (prev === "fail") continue;
-        lastByReq.set(ref, status);
+        lastSimByReq.set(ref, status);
       }
     }
   }
 
   const rows = requirements.map((req) => {
-    const simulator = simCoverage.get(req.id) ?? [];
-    const playwright = pwCoverage.get(req.id) ?? [];
-    const manual = (req.expectedLayers ?? []).includes("manual") || req.status === "manual_only";
-    const unit = (req.expectedLayers ?? []).includes("unit");
-    let lastResult: "pass" | "fail" | "not_run" | "blocked" | "manual" = "not_run";
-    if (req.status === "blocked_ui") lastResult = "blocked";
-    else if (req.status === "manual_only") lastResult = "manual";
-    else if (lastByReq.has(req.id)) lastResult = lastByReq.get(req.id)!;
-    else if (simulator.length || playwright.length) lastResult = "not_run";
+    const expected = (req.expectedLayers ?? []) as LayerKey[];
+    const simulatorLinks = simCoverage.get(req.id) ?? [];
+    const playwrightLinks = pwCoverage.get(req.id) ?? [];
+    const coveredLayers: Record<LayerKey, boolean> = {
+      simulator: simulatorLinks.length > 0,
+      playwright: playwrightLinks.length > 0,
+      // Unit discovery is not implemented; never claim unit coverage from expectedLayers alone.
+      unit: false,
+      manual:
+        expected.includes("manual") || req.status === "manual_only",
+    };
+
+    const coveredCount = expected.filter((layer) => coveredLayers[layer]).length;
+    const fullyCovered =
+      expected.length > 0 && coveredCount === expected.length;
+    const partiallyCovered =
+      coveredCount > 0 && coveredCount < expected.length;
+    const missing =
+      expected.length > 0 &&
+      coveredCount === 0 &&
+      req.status === "active" &&
+      Boolean(req.automationRequired);
+
+    let lastSimulatorResult:
+      | "pass"
+      | "fail"
+      | "not_run"
+      | "not_required"
+      | "blocked_ui" = "not_run";
+
+    if (req.status === "blocked_ui") {
+      lastSimulatorResult = "blocked_ui";
+    } else if (!expected.includes("simulator")) {
+      lastSimulatorResult = "not_required";
+    } else if (lastSimByReq.has(req.id)) {
+      lastSimulatorResult = lastSimByReq.get(req.id)!;
+    } else {
+      lastSimulatorResult = "not_run";
+    }
+
+    const runbookLink = req.runbook?.file && req.runbook.anchor
+      ? `${req.runbook.file}#${req.runbook.anchor}`
+      : "";
 
     return {
       id: req.id,
       title: req.title,
-      runbookSection: req.runbookSection ?? "",
+      runbookSection: req.runbook?.section ?? "",
+      runbookLink,
+      procedureLevel: req.runbook?.procedureLevel ?? "",
       area: req.area ?? "",
       status: req.status,
-      simulator: simulator.join(", ") || "—",
-      playwright: playwright.length ? `${playwright.length} test(s)` : "—",
-      unit: unit ? "expected" : "—",
-      manual: manual ? "yes" : "—",
-      uiStatus: req.status === "blocked_ui" ? "blocked_ui" : "ok",
-      lastResult,
-      implemented: Boolean(simulator.length || playwright.length || unit || manual),
+      expectedLayers: expected,
+      simulator: simulatorLinks.join(", ") || "—",
+      playwright: playwrightLinks.length
+        ? `${playwrightLinks.length} linked`
+        : "—",
+      unit: expected.includes("unit") ? "expected (undiscovered)" : "—",
+      manual: coveredLayers.manual ? "yes" : "—",
+      coverageStatus: req.status === "blocked_ui"
+        ? "blocked_ui"
+        : req.status === "manual_only"
+          ? "manual_only"
+          : fullyCovered
+            ? "fully_covered"
+            : partiallyCovered
+              ? "partial"
+              : missing
+                ? "missing"
+                : "unspecified",
+      lastSimulatorResult,
+      fullyCovered,
+      partiallyCovered,
+      missing,
     };
   });
 
   const summary = {
     total: rows.length,
-    automated: rows.filter((r) => r.simulator !== "—" || r.playwright !== "—").length,
-    partiallyCovered: rows.filter(
-      (r) =>
-        (r.simulator !== "—") !== (r.playwright !== "—") &&
-        r.status === "active"
-    ).length,
+    fullyCovered: rows.filter((r) => r.fullyCovered).length,
+    partiallyCovered: rows.filter((r) => r.partiallyCovered).length,
+    missingRequiredAutomation: rows.filter((r) => r.missing).length,
     manualOnly: rows.filter((r) => r.status === "manual_only").length,
     blockedUi: rows.filter((r) => r.status === "blocked_ui").length,
-    missingRequiredAutomation: rows.filter(
-      (r) =>
-        r.status === "active" &&
-        requirements.find((x) => x.id === r.id)?.automationRequired &&
-        r.simulator === "—" &&
-        r.playwright === "—" &&
-        r.unit === "—"
+    simulatorPass: rows.filter((r) => r.lastSimulatorResult === "pass").length,
+    simulatorFail: rows.filter((r) => r.lastSimulatorResult === "fail").length,
+    simulatorNotRun: rows.filter((r) => r.lastSimulatorResult === "not_run")
+      .length,
+    simulatorNotRequired: rows.filter(
+      (r) => r.lastSimulatorResult === "not_required"
     ).length,
-    passing: rows.filter((r) => r.lastResult === "pass").length,
-    failing: rows.filter((r) => r.lastResult === "fail").length,
-    notRun: rows.filter((r) => r.lastResult === "not_run").length,
   };
 
   const outDir = path.join(ROOT, "tools", "case-simulator", "reports");
@@ -170,12 +221,12 @@ function main() {
   }
   md.push("");
   md.push(
-    "| Requirement | Runbook section | Simulator | Playwright | Unit | Manual | UI status | Last result |"
+    "| Requirement | Runbook | Simulator | Playwright | Unit | Manual | Coverage | Last simulator result |"
   );
   md.push("| --- | --- | --- | --- | --- | --- | --- | --- |");
   for (const row of rows) {
     md.push(
-      `| \`${row.id}\` | ${row.runbookSection} | ${row.simulator} | ${row.playwright} | ${row.unit} | ${row.manual} | ${row.uiStatus} | ${row.lastResult} |`
+      `| \`${row.id}\` | ${row.runbookLink || row.runbookSection || "—"} | ${row.simulator} | ${row.playwright} | ${row.unit} | ${row.manual} | ${row.coverageStatus} | ${row.lastSimulatorResult} |`
     );
   }
   md.push("");
@@ -185,7 +236,7 @@ function main() {
   console.log(`Wrote ${path.relative(ROOT, jsonPath)}`);
   console.log(`Wrote ${path.relative(ROOT, mdPath)}`);
   console.log(
-    `Summary: ${summary.automated}/${summary.total} automated links; blocked_ui=${summary.blockedUi}; missingRequired=${summary.missingRequiredAutomation}`
+    `Summary: fully=${summary.fullyCovered} partial=${summary.partiallyCovered} missing=${summary.missingRequiredAutomation} blocked_ui=${summary.blockedUi}`
   );
 }
 
