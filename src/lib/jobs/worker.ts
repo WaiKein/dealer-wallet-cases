@@ -9,6 +9,7 @@ import { handleIntegrationExecuteJob } from "@/lib/jobs/handlers/integration-exe
 import { handleIntegrationStatusInquiryJob } from "@/lib/jobs/handlers/integration-status";
 
 const HEARTBEAT_MS = 60_000;
+export const JOB_HEARTBEAT_MS = HEARTBEAT_MS;
 
 /**
  * System job handlers (documented auth bypass):
@@ -159,6 +160,8 @@ type JobFence = {
   attemptCount: number;
 };
 
+export type { JobFence };
+
 async function finalizeJob(
   service: ReturnType<typeof createServiceClient>,
   fence: JobFence,
@@ -180,19 +183,27 @@ async function finalizeJob(
   return Boolean(data);
 }
 
-function startJobHeartbeat(
+export function startJobHeartbeat(
   service: ReturnType<typeof createServiceClient>,
-  fence: JobFence
+  fence: JobFence,
+  intervalMs = HEARTBEAT_MS
 ): () => void {
   const timer = setInterval(() => {
-    void service
-      .from("background_jobs")
-      .update({ locked_at: new Date().toISOString() })
-      .eq("id", fence.jobId)
-      .eq("locked_by", fence.lockedBy)
-      .eq("attempt_count", fence.attemptCount)
-      .eq("status", "running");
-  }, HEARTBEAT_MS);
+    // Supabase builders are lazy — must await (or .then) to send the update.
+    void (async () => {
+      const { error } = await service
+        .from("background_jobs")
+        .update({ locked_at: new Date().toISOString() })
+        .eq("id", fence.jobId)
+        .eq("locked_by", fence.lockedBy)
+        .eq("attempt_count", fence.attemptCount)
+        .eq("status", "running");
+
+      if (error) {
+        console.error("Job heartbeat failed", error);
+      }
+    })();
+  }, intervalMs);
 
   if (typeof timer.unref === "function") {
     timer.unref();

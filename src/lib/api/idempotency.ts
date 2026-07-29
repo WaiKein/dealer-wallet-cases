@@ -8,7 +8,7 @@ const IDEMPOTENCY_HEADER = "idempotency-key";
 /** Pending claim lease — stale claims may be taken over after this window. */
 export const IDEMPOTENCY_LEASE_SECONDS = 60;
 /** Renew claimed_at while the handler runs so healthy long requests keep ownership. */
-const LEASE_HEARTBEAT_MS = 20_000;
+export const LEASE_HEARTBEAT_MS = 20_000;
 
 export function getIdempotencyKey(request: Request): string | null {
   return request.headers.get(IDEMPOTENCY_HEADER)?.trim() || null;
@@ -34,6 +34,8 @@ type ClaimOwnership = {
   id: string;
   token: string;
 };
+
+export type { ClaimOwnership };
 
 /**
  * Atomically claim the idempotency key before running the handler.
@@ -185,18 +187,26 @@ export async function withIdempotency(params: {
   }
 }
 
-function startClaimHeartbeat(
+export function startClaimHeartbeat(
   service: ReturnType<typeof createServiceClient>,
-  ownership: ClaimOwnership
+  ownership: ClaimOwnership,
+  intervalMs = LEASE_HEARTBEAT_MS
 ): () => void {
   const timer = setInterval(() => {
-    void service
-      .from("idempotency_keys")
-      .update({ claimed_at: new Date().toISOString() })
-      .eq("id", ownership.id)
-      .eq("claim_token", ownership.token)
-      .is("response_status", null);
-  }, LEASE_HEARTBEAT_MS);
+    // Supabase builders are lazy — must await (or .then) to send the update.
+    void (async () => {
+      const { error } = await service
+        .from("idempotency_keys")
+        .update({ claimed_at: new Date().toISOString() })
+        .eq("id", ownership.id)
+        .eq("claim_token", ownership.token)
+        .is("response_status", null);
+
+      if (error) {
+        console.error("Idempotency heartbeat failed", error);
+      }
+    })();
+  }, intervalMs);
 
   if (typeof timer.unref === "function") {
     timer.unref();
