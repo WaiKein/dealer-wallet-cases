@@ -12,6 +12,7 @@ import {
   resolveExceptionAction,
   retryExceptionExecutionAction,
 } from "@/lib/exceptions/actions";
+import { escapeCsvCell } from "@/lib/csv";
 import {
   EXCEPTION_QUEUE_LABELS,
   type ExceptionQueueRow,
@@ -36,14 +37,6 @@ function ageLabel(iso: string | null | undefined): string {
   const hours = Math.floor(ms / 3600000);
   if (hours < 24) return `${hours}h`;
   return `${Math.floor(hours / 24)}d`;
-}
-
-function csvEscape(value: unknown): string {
-  const text = value == null ? "" : String(value);
-  if (/[",\n]/.test(text)) {
-    return `"${text.replace(/"/g, '""')}"`;
-  }
-  return text;
 }
 
 export function ExceptionsWorkspace({
@@ -131,7 +124,7 @@ export function ExceptionsWorkspace({
           ageLabel(row.case_created_at),
           ageLabel(row.created_at),
         ]
-          .map(csvEscape)
+          .map(escapeCsvCell)
           .join(",")
       ),
     ];

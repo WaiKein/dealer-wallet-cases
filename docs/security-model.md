@@ -79,19 +79,39 @@ Service-role clients are used only in server workers, notification dispatch enri
 | User role | `profile.role` from `profiles` table |
 | Team membership | `assignment_group_members` lookup |
 | Approval limit | `approval_rules` / `approval_delegations` |
-| Execution status | `case_integration_executions` rows |
+| Execution status | Service-role domain services / workers only |
 | Provider outcome | Mock config via test-control only; workers call provider server-side |
 
-Apply migration `20260101000021_security_hardening.sql` before running scenario `41`:
+## Signup and roles (migration `022`)
+
+- `handle_new_user` **always** assigns `requester`. `raw_user_meta_data.role` is ignored.
+- Elevated roles (`admin`, `approver`, `operations_agent`, `team_lead`) are granted only through the authenticated admin console / admin profile updates.
+
+## Integration executions (migration `022`)
+
+- Authenticated clients have **SELECT-only** RLS on `case_integration_executions` and `case_integration_attempts`.
+- INSERT/UPDATE are restricted to `service_role` (domain services and workers).
+- Manual retry and worker execute paths re-validate that the execution is linked to an **APPROVED** approval request for the same case.
+
+## Idempotency and jobs
+
+- HTTP idempotency keys are **claimed atomically** (insert-first) before the handler runs; losers replay a completed response or receive `CONFLICT` if still in flight.
+- `claim_background_jobs` reclaims `running` jobs whose `locked_at` is older than the lock timeout (default 5 minutes).
+
+## CSV export
+
+- Management and exception CSV exports neutralize formula injection by prefixing cells that begin with `=`, `+`, `-`, `@`, tab, or CR.
+
+Apply migrations through `20260101000022_security_fixes.sql`:
 
 ```bash
 npx supabase db push
-# or apply the SQL in supabase/migrations/20260101000021_security_hardening.sql
+# or: npx supabase db reset
 ```
 
 ## Verification
 
 ```bash
-npm run test -- tests/security.test.ts
+npm run test -- tests/security.test.ts tests/security-fixes.test.ts
 npm run simulate:security
 ```

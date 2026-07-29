@@ -503,12 +503,13 @@ BEGIN
   ORDER BY created_at
   LIMIT 1;
 
+  -- Always assign requester. Elevated roles are granted only by admins.
   INSERT INTO public.profiles (id, email, full_name, role, organization_id)
   VALUES (
     NEW.id,
     NEW.email,
     COALESCE(NEW.raw_user_meta_data ->> 'full_name', split_part(NEW.email, '@', 1)),
-    COALESCE((NEW.raw_user_meta_data ->> 'role')::public.user_role, 'requester'),
+    'requester',
     default_org
   );
   RETURN NEW;

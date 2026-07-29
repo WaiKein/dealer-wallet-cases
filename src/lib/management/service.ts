@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { canAccessManagementDashboard } from "@/lib/auth/permissions";
+import { escapeCsvCell } from "@/lib/csv";
 import {
   managementDashboardFilterSchema,
   type ManagementDashboardFilterInput,
@@ -189,14 +190,6 @@ export async function exportManagementDashboardCsv(
     "updated_at",
   ];
 
-  const escape = (value: unknown) => {
-    const text = value == null ? "" : String(value);
-    if (/[",\n]/.test(text)) {
-      return `"${text.replace(/"/g, '""')}"`;
-    }
-    return text;
-  };
-
   const lines = [headers.join(",")];
   for (const row of rows) {
     lines.push(
@@ -218,7 +211,7 @@ export async function exportManagementDashboardCsv(
         row.created_at,
         row.updated_at,
       ]
-        .map(escape)
+        .map(escapeCsvCell)
         .join(",")
     );
   }

@@ -43,6 +43,41 @@ function executionIdempotencyKey(
   return `wallet-exec:${caseId}:${approvalRequestId}`;
 }
 
+/** Defense in depth: retries must reference an APPROVED approval for the same case. */
+async function assertExecutionLinkedToApprovedRequest(
+  execution: CaseIntegrationExecution
+): Promise<ActionResult> {
+  if (!execution.approval_request_id) {
+    return {
+      success: false,
+      error: "Execution is missing an approval link and cannot be retried.",
+      code: "FORBIDDEN",
+    };
+  }
+
+  const service = createServiceClient();
+  const { data: approval } = await service
+    .from("approval_requests")
+    .select("id, status, case_id, organization_id")
+    .eq("id", execution.approval_request_id)
+    .maybeSingle();
+
+  if (
+    !approval ||
+    approval.case_id !== execution.case_id ||
+    approval.organization_id !== execution.organization_id ||
+    approval.status !== "APPROVED"
+  ) {
+    return {
+      success: false,
+      error: "Execution is not linked to an approved request.",
+      code: "FORBIDDEN",
+    };
+  }
+
+  return { success: true };
+}
+
 /**
  * After final approval: create execution row (idempotent) and enqueue job.
  * Does not change case workflow status.
@@ -305,6 +340,11 @@ async function retryLoadedExecution(params: {
   }
 
   const service = createServiceClient();
+  const approvalOk = await assertExecutionLinkedToApprovedRequest(execution);
+  if (!approvalOk.success) {
+    return approvalOk as ActionResult<{ executionId: string; version: number }>;
+  }
+
   const nextVersion = Number(execution.version) + 1;
   const { data: updated, error } = await service
     .from("case_integration_executions")
@@ -532,6 +572,13 @@ export async function processIntegrationExecuteJob(params: {
 
   if (execution.status === "CANCELLED") {
     return;
+  }
+
+  const approvalOk = await assertExecutionLinkedToApprovedRequest(
+    execution as CaseIntegrationExecution
+  );
+  if (!approvalOk.success) {
+    throw new Error(approvalOk.error ?? "Execution approval link invalid.");
   }
 
   const currentVersion = Number(execution.version);

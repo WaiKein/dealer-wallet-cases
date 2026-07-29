@@ -109,34 +109,14 @@ CREATE POLICY "Users view org integration executions"
   ON public.case_integration_executions FOR SELECT
   USING (organization_id = public.get_my_org_id());
 
-CREATE POLICY "Agents manage org integration executions"
-  ON public.case_integration_executions FOR ALL
-  USING (
-    organization_id = public.get_my_org_id()
-    AND public.get_my_role() IN ('operations_agent', 'team_lead', 'admin')
-  )
-  WITH CHECK (
-    organization_id = public.get_my_org_id()
-    AND public.get_my_role() IN ('operations_agent', 'team_lead', 'admin')
-  );
+-- Writes are restricted to service_role (workers / domain services).
+-- Authenticated clients may only read org-scoped execution history.
 
 CREATE POLICY "Users view org integration attempts"
   ON public.case_integration_attempts FOR SELECT
   USING (organization_id = public.get_my_org_id());
 
-CREATE POLICY "Agents manage org integration attempts"
-  ON public.case_integration_attempts FOR ALL
-  USING (
-    organization_id = public.get_my_org_id()
-    AND public.get_my_role() IN ('operations_agent', 'team_lead', 'admin')
-  )
-  WITH CHECK (
-    organization_id = public.get_my_org_id()
-    AND public.get_my_role() IN ('operations_agent', 'team_lead', 'admin')
-  );
-
-GRANT SELECT, INSERT, UPDATE ON public.case_integration_executions TO authenticated;
-GRANT SELECT, INSERT, UPDATE ON public.case_integration_attempts TO authenticated;
+GRANT SELECT ON public.case_integration_executions TO authenticated;
+GRANT SELECT ON public.case_integration_attempts TO authenticated;
 GRANT ALL ON public.case_integration_executions TO service_role;
 GRANT ALL ON public.case_integration_attempts TO service_role;
--- Append-only attempts: no DELETE grant for authenticated

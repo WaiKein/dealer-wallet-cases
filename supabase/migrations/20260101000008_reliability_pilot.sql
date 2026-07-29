@@ -33,8 +33,9 @@ CREATE TABLE IF NOT EXISTS public.idempotency_keys (
   route TEXT NOT NULL,
   method TEXT NOT NULL,
   request_hash TEXT NOT NULL,
-  response_status INTEGER NOT NULL,
-  response_body JSONB NOT NULL,
+  -- Nullable until the request completes (atomic claim: insert first, then fill).
+  response_status INTEGER,
+  response_body JSONB,
   case_id UUID REFERENCES public.cases (id) ON DELETE SET NULL,
   correlation_id UUID,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -82,7 +83,7 @@ CREATE TABLE IF NOT EXISTS public.background_jobs (
 
 CREATE INDEX IF NOT EXISTS idx_background_jobs_claim
   ON public.background_jobs (status, run_at)
-  WHERE status IN ('pending', 'failed');
+  WHERE status IN ('pending', 'failed', 'running');
 
 CREATE INDEX IF NOT EXISTS idx_background_jobs_org
   ON public.background_jobs (organization_id, created_at DESC);
@@ -115,22 +116,32 @@ CREATE TRIGGER background_jobs_set_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION public.set_background_jobs_updated_at();
 
--- Safe concurrent claim: SKIP LOCKED
+-- Safe concurrent claim: SKIP LOCKED; also reclaim stale running jobs.
 CREATE OR REPLACE FUNCTION public.claim_background_jobs(
   p_limit INTEGER,
-  p_worker_id TEXT
+  p_worker_id TEXT,
+  p_lock_timeout_seconds INTEGER DEFAULT 300
 )
 RETURNS SETOF public.background_jobs
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
+DECLARE
+  lock_timeout INTERVAL := make_interval(secs => GREATEST(COALESCE(p_lock_timeout_seconds, 300), 30));
 BEGIN
   RETURN QUERY
   WITH candidates AS (
     SELECT j.id
     FROM public.background_jobs j
-    WHERE j.status IN ('pending', 'failed')
+    WHERE (
+        j.status IN ('pending', 'failed')
+        OR (
+          j.status = 'running'
+          AND j.locked_at IS NOT NULL
+          AND j.locked_at < NOW() - lock_timeout
+        )
+      )
       AND j.run_at <= NOW()
       AND j.attempt_count < j.max_attempts
     ORDER BY j.run_at ASC
@@ -143,7 +154,11 @@ BEGIN
       status = 'running',
       locked_at = NOW(),
       locked_by = p_worker_id,
-      attempt_count = j.attempt_count + 1
+      attempt_count = j.attempt_count + 1,
+      last_error = CASE
+        WHEN j.status = 'running' THEN COALESCE(j.last_error, 'Reclaimed after lock timeout')
+        ELSE j.last_error
+      END
     FROM candidates c
     WHERE j.id = c.id
     RETURNING j.*
@@ -158,7 +173,7 @@ GRANT SELECT, INSERT ON public.background_job_attempts TO authenticated;
 GRANT ALL ON public.idempotency_keys TO service_role;
 GRANT ALL ON public.background_jobs TO service_role;
 GRANT ALL ON public.background_job_attempts TO service_role;
-GRANT EXECUTE ON FUNCTION public.claim_background_jobs(INTEGER, TEXT) TO service_role;
+GRANT EXECUTE ON FUNCTION public.claim_background_jobs(INTEGER, TEXT, INTEGER) TO service_role;
 
 ALTER TABLE public.idempotency_keys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.background_jobs ENABLE ROW LEVEL SECURITY;
