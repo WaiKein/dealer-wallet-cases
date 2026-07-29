@@ -98,8 +98,10 @@ Service-role clients are used only in server workers, notification dispatch enri
 ## Idempotency and jobs
 
 - HTTP idempotency keys are **claimed atomically** (insert-first) before the handler runs.
-- Pending claims carry a lease (`claimed_at`); stale leases are taken over via `takeover_stale_idempotency_claim`.
-- Finalization of the claim is verified; lost leases return `CONFLICT`.
+- Pending claims carry a lease (`claimed_at`) and an owner `claim_token`.
+- Stale leases are taken over via `takeover_stale_idempotency_claim`, which rotates `claim_token`.
+- Finalize/delete require matching `claim_token`, so the previous owner is fenced out after takeover.
+- While a handler runs, `claimed_at` is heartbeated so healthy long requests keep the lease.
 - `claim_background_jobs` is **REVOKE**d from `PUBLIC` / `anon` / `authenticated` (service_role only).
 - `claim_background_jobs` reclaims `running` jobs whose `locked_at` is older than the lock timeout (default 5 minutes).
 - Worker completion/failure updates are fenced by `locked_by` + `attempt_count` + `status = running`, with heartbeat renewal of `locked_at`.
@@ -108,7 +110,7 @@ Service-role clients are used only in server workers, notification dispatch enri
 
 - Management and exception CSV exports neutralize formula injection by prefixing cells that begin with `=`, `+`, `-`, `@`, tab, or CR.
 
-Apply migrations through `20260101000023_security_hardening_followup.sql`:
+Apply migrations through `20260101000024_idempotency_claim_token.sql`:
 
 ```bash
 npx supabase db push

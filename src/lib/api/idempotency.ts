@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { apiError } from "@/lib/api/response";
 import { getCorrelationId } from "@/lib/observability/correlation";
@@ -7,6 +7,8 @@ import { createServiceClient } from "@/lib/supabase/api";
 const IDEMPOTENCY_HEADER = "idempotency-key";
 /** Pending claim lease — stale claims may be taken over after this window. */
 export const IDEMPOTENCY_LEASE_SECONDS = 60;
+/** Renew claimed_at while the handler runs so healthy long requests keep ownership. */
+const LEASE_HEARTBEAT_MS = 20_000;
 
 export function getIdempotencyKey(request: Request): string | null {
   return request.headers.get(IDEMPOTENCY_HEADER)?.trim() || null;
@@ -25,11 +27,18 @@ type IdempotencyRow = {
   response_body: unknown;
   correlation_id: string | null;
   claimed_at?: string | null;
+  claim_token?: string | null;
+};
+
+type ClaimOwnership = {
+  id: string;
+  token: string;
 };
 
 /**
  * Atomically claim the idempotency key before running the handler.
- * Stale pending claims (lease expired) may be taken over.
+ * Stale pending claims (lease expired) may be taken over with a new claim_token,
+ * which fences the previous owner's finalize/delete updates.
  */
 export async function withIdempotency(params: {
   request: Request;
@@ -48,6 +57,7 @@ export async function withIdempotency(params: {
   const requestHash = hashRequestPayload(params.requestPayload);
   const service = createServiceClient();
   const correlationId = getCorrelationId();
+  const claimToken = randomUUID();
   const claimedAt = new Date().toISOString();
 
   const { data: claimed, error: claimError } = await service
@@ -63,19 +73,22 @@ export async function withIdempotency(params: {
       case_id: params.caseId ?? null,
       correlation_id: correlationId,
       claimed_at: claimedAt,
+      claim_token: claimToken,
     })
     .select(
-      "id, request_hash, response_status, response_body, correlation_id, claimed_at"
+      "id, request_hash, response_status, response_body, correlation_id, claimed_at, claim_token"
     )
     .maybeSingle();
 
-  let claimId = claimed?.id as string | undefined;
+  let ownership: ClaimOwnership | null = claimed?.id
+    ? { id: claimed.id as string, token: claimToken }
+    : null;
 
   if (claimError?.code === "23505") {
     const { data: existing } = await service
       .from("idempotency_keys")
       .select(
-        "id, request_hash, response_status, response_body, correlation_id, claimed_at"
+        "id, request_hash, response_status, response_body, correlation_id, claimed_at, claim_token"
       )
       .eq("organization_id", params.organizationId)
       .eq("idempotency_key", key)
@@ -95,6 +108,7 @@ export async function withIdempotency(params: {
       });
     }
 
+    const takeoverToken = randomUUID();
     const { data: taken } = await service.rpc("takeover_stale_idempotency_claim", {
       p_organization_id: params.organizationId,
       p_idempotency_key: key,
@@ -103,6 +117,7 @@ export async function withIdempotency(params: {
       p_request_hash: requestHash,
       p_correlation_id: correlationId,
       p_lease_seconds: IDEMPOTENCY_LEASE_SECONDS,
+      p_claim_token: takeoverToken,
     });
 
     const takenRow = (Array.isArray(taken) ? taken[0] : taken) as
@@ -110,20 +125,22 @@ export async function withIdempotency(params: {
       | null
       | undefined;
 
-    if (!takenRow?.id) {
+    if (!takenRow?.id || takenRow.claim_token !== takeoverToken) {
       return apiError({
         code: "CONFLICT",
         message: "Idempotency key is being processed. Retry shortly.",
       });
     }
 
-    claimId = takenRow.id;
-  } else if (claimError || !claimed) {
+    ownership = { id: takenRow.id, token: takeoverToken };
+  } else if (claimError || !ownership) {
     return apiError({
       code: "INTERNAL_ERROR",
       message: claimError?.message ?? "Failed to claim idempotency key.",
     });
   }
+
+  const stopHeartbeat = startClaimHeartbeat(service, ownership);
 
   try {
     const response = await params.handler();
@@ -138,12 +155,14 @@ export async function withIdempotency(params: {
         case_id: params.caseId ?? null,
         correlation_id: correlationId,
       })
-      .eq("id", claimId!)
+      .eq("id", ownership.id)
+      .eq("claim_token", ownership.token)
       .is("response_status", null)
       .select("id")
       .maybeSingle();
 
     if (finalizeError || !finalized) {
+      // Lost ownership (taken over) or already finalized by another owner.
       return apiError({
         code: "CONFLICT",
         message:
@@ -153,9 +172,37 @@ export async function withIdempotency(params: {
 
     return response;
   } catch (error) {
-    await service.from("idempotency_keys").delete().eq("id", claimId!);
+    // Only the current owner may release the pending claim.
+    await service
+      .from("idempotency_keys")
+      .delete()
+      .eq("id", ownership.id)
+      .eq("claim_token", ownership.token)
+      .is("response_status", null);
     throw error;
+  } finally {
+    stopHeartbeat();
   }
+}
+
+function startClaimHeartbeat(
+  service: ReturnType<typeof createServiceClient>,
+  ownership: ClaimOwnership
+): () => void {
+  const timer = setInterval(() => {
+    void service
+      .from("idempotency_keys")
+      .update({ claimed_at: new Date().toISOString() })
+      .eq("id", ownership.id)
+      .eq("claim_token", ownership.token)
+      .is("response_status", null);
+  }, LEASE_HEARTBEAT_MS);
+
+  if (typeof timer.unref === "function") {
+    timer.unref();
+  }
+
+  return () => clearInterval(timer);
 }
 
 function replayOrConflict(
