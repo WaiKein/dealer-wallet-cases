@@ -18,6 +18,8 @@ setup:
   titlePrefix: "[sim-exec]"
 actions:
   - actor: agent
+    action: reset_clock
+  - actor: agent
     action: reset_wallet_mock
   - actor: agent
     action: configure_wallet_mock

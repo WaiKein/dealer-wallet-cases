@@ -18,6 +18,8 @@ setup:
   titlePrefix: "[sim-p9-rexc]"
 actions:
   - actor: agent
+    action: reset_clock
+  - actor: agent
     action: reset_wallet_mock
   - actor: agent
     action: advance_mock_provider_state

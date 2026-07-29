@@ -37,9 +37,28 @@ export class TestClock implements Clock {
   }
 }
 
-const systemClock = new SystemClock();
-let activeClock: Clock = systemClock;
-let testClock: TestClock | null = null;
+type ClockStore = {
+  systemClock: SystemClock;
+  activeClock: Clock;
+  testClock: TestClock | null;
+};
+
+const GLOBAL_KEY = "__dealerWalletClock__";
+
+function store(): ClockStore {
+  const global = globalThis as typeof globalThis & {
+    [GLOBAL_KEY]?: ClockStore;
+  };
+  if (!global[GLOBAL_KEY]) {
+    const systemClock = new SystemClock();
+    global[GLOBAL_KEY] = {
+      systemClock,
+      activeClock: systemClock,
+      testClock: null,
+    };
+  }
+  return global[GLOBAL_KEY]!;
+}
 
 export function isTestControlEnabled(): boolean {
   return (
@@ -50,20 +69,23 @@ export function isTestControlEnabled(): boolean {
 }
 
 export function getClock(): Clock {
-  return activeClock;
+  return store().activeClock;
 }
 
 export function enableSystemClock(): void {
-  activeClock = systemClock;
-  testClock = null;
+  const clocks = store();
+  clocks.activeClock = clocks.systemClock;
+  clocks.testClock = null;
 }
 
 export function enableTestClock(initial?: Date): TestClock {
   if (!isTestControlEnabled()) {
     throw new Error("Test clock is disabled outside test-control environments.");
   }
-  testClock = new TestClock(initial ?? new Date());
-  activeClock = testClock;
+  const clocks = store();
+  const testClock = new TestClock(initial ?? new Date());
+  clocks.testClock = testClock;
+  clocks.activeClock = testClock;
   return testClock;
 }
 
@@ -73,5 +95,5 @@ export const useSystemClock = enableSystemClock;
 export const useTestClock = enableTestClock;
 
 export function getTestClock(): TestClock | null {
-  return testClock;
+  return store().testClock;
 }
