@@ -41,7 +41,7 @@ DROP POLICY IF EXISTS "Agents manage org integration attempts"
 
 REVOKE INSERT, UPDATE, DELETE ON public.case_integration_executions FROM authenticated;
 REVOKE INSERT, UPDATE, DELETE ON public.case_integration_attempts FROM authenticated;
-GRANT SELECT ON public.case_integration_executions TO authenticated;
+-- SELECT privileges / case-scoped policies are owned by migration 013 + 023.
 GRANT SELECT ON public.case_integration_attempts TO authenticated;
 
 -- ---------------------------------------------------------------------------
@@ -107,6 +107,12 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.claim_background_jobs(INTEGER, TEXT, INTEGER) TO service_role;
+
+REVOKE ALL ON FUNCTION public.claim_background_jobs(INTEGER, TEXT, INTEGER)
+  FROM PUBLIC, anon, authenticated;
+
+GRANT EXECUTE ON FUNCTION public.claim_background_jobs(INTEGER, TEXT, INTEGER)
+  TO service_role;
 
 DROP INDEX IF EXISTS idx_background_jobs_claim;
 CREATE INDEX IF NOT EXISTS idx_background_jobs_claim

@@ -1,3 +1,4 @@
+import { assertCaseAccess } from "@/lib/cases/access";
 import { isRequireExecutionBeforeResolve } from "@/lib/executions/feature-flags";
 import {
   enqueueIntegrationExecute,
@@ -6,8 +7,8 @@ import {
 import { backoffMs } from "@/lib/jobs/enqueue";
 import { getCorrelationId } from "@/lib/observability/correlation";
 import { notifyUsers } from "@/lib/notifications/service";
-import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/api";
+import { maskExecutionPayloadForRole } from "@/lib/security/masking";
 import { buildWalletAdjustmentCommand } from "@/lib/wallet/command";
 import {
   canRetryAfterStatusInquiry,
@@ -185,12 +186,32 @@ export async function createExecutionForApprovedCase(params: {
   return { success: true, data: { executionId: created.id } };
 }
 
-export async function getLatestExecutionForCase(caseId: string): Promise<{
+export async function getLatestExecutionForCase(
+  caseId: string,
+  profile?: Profile
+): Promise<{
   execution: CaseIntegrationExecution | null;
   attempts: CaseIntegrationAttempt[];
 }> {
-  const supabase = await createClient();
-  const { data: execution } = await supabase
+  // Prefer service-role + app masking so raw financial columns are never
+  // required on the authenticated PostgREST grant set.
+  const service = createServiceClient();
+
+  if (profile) {
+    const { data: caseRow } = await service
+      .from("cases")
+      .select(
+        "id, organization_id, requester_id, assigned_agent_id, assigned_group_id, status, approver_id"
+      )
+      .eq("id", caseId)
+      .maybeSingle();
+    const access = await assertCaseAccess(profile, caseRow as never);
+    if (!access.success) {
+      return { execution: null, attempts: [] };
+    }
+  }
+
+  const { data: execution } = await service
     .from("case_integration_executions")
     .select("*")
     .eq("case_id", caseId)
@@ -202,16 +223,24 @@ export async function getLatestExecutionForCase(caseId: string): Promise<{
     return { execution: null, attempts: [] };
   }
 
-  const { data: attempts } = await supabase
+  const { data: attempts } = await service
     .from("case_integration_attempts")
     .select("*")
     .eq("execution_id", execution.id)
     .order("attempt_no", { ascending: true });
 
-  return {
+  if (!profile) {
+    return {
+      execution: execution as CaseIntegrationExecution,
+      attempts: (attempts ?? []) as CaseIntegrationAttempt[],
+    };
+  }
+
+  return maskExecutionPayloadForRole({
     execution: execution as CaseIntegrationExecution,
     attempts: (attempts ?? []) as CaseIntegrationAttempt[],
-  };
+    role: profile.role,
+  });
 }
 
 function assertExecutionReader(profile: Profile): ActionResult<never> | null {

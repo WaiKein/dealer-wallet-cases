@@ -29,4 +29,9 @@ describe("idempotency request hashing", () => {
       hashRequestPayload({ title: "B" })
     );
   });
+
+  it("exports a positive lease window for stale claim takeover", async () => {
+    const { IDEMPOTENCY_LEASE_SECONDS } = await import("@/lib/api/idempotency");
+    expect(IDEMPOTENCY_LEASE_SECONDS).toBeGreaterThanOrEqual(5);
+  });
 });

@@ -72,7 +72,7 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
   }
 
   const approval = await getLatestApprovalForCase(id);
-  const { execution, attempts } = await getLatestExecutionForCase(id);
+  const { execution, attempts } = await getLatestExecutionForCase(id, profile);
 
   return (
     <CaseDetail

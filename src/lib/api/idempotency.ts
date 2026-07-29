@@ -5,6 +5,8 @@ import { getCorrelationId } from "@/lib/observability/correlation";
 import { createServiceClient } from "@/lib/supabase/api";
 
 const IDEMPOTENCY_HEADER = "idempotency-key";
+/** Pending claim lease — stale claims may be taken over after this window. */
+export const IDEMPOTENCY_LEASE_SECONDS = 60;
 
 export function getIdempotencyKey(request: Request): string | null {
   return request.headers.get(IDEMPOTENCY_HEADER)?.trim() || null;
@@ -22,12 +24,12 @@ type IdempotencyRow = {
   response_status: number | null;
   response_body: unknown;
   correlation_id: string | null;
+  claimed_at?: string | null;
 };
 
 /**
  * Atomically claim the idempotency key before running the handler.
- * Only the winner executes; losers replay a completed response or get CONFLICT
- * if another request is still in flight.
+ * Stale pending claims (lease expired) may be taken over.
  */
 export async function withIdempotency(params: {
   request: Request;
@@ -46,6 +48,7 @@ export async function withIdempotency(params: {
   const requestHash = hashRequestPayload(params.requestPayload);
   const service = createServiceClient();
   const correlationId = getCorrelationId();
+  const claimedAt = new Date().toISOString();
 
   const { data: claimed, error: claimError } = await service
     .from("idempotency_keys")
@@ -59,29 +62,63 @@ export async function withIdempotency(params: {
       response_body: null,
       case_id: params.caseId ?? null,
       correlation_id: correlationId,
+      claimed_at: claimedAt,
     })
-    .select("id, request_hash, response_status, response_body, correlation_id")
+    .select(
+      "id, request_hash, response_status, response_body, correlation_id, claimed_at"
+    )
     .maybeSingle();
+
+  let claimId = claimed?.id as string | undefined;
 
   if (claimError?.code === "23505") {
     const { data: existing } = await service
       .from("idempotency_keys")
-      .select("id, request_hash, response_status, response_body, correlation_id")
+      .select(
+        "id, request_hash, response_status, response_body, correlation_id, claimed_at"
+      )
       .eq("organization_id", params.organizationId)
       .eq("idempotency_key", key)
       .eq("route", params.route)
       .eq("method", params.method)
       .maybeSingle();
 
-    return replayOrConflict(
-      existing as IdempotencyRow | null,
-      requestHash,
-      key,
-      correlationId
-    );
-  }
+    const row = existing as IdempotencyRow | null;
+    if (row?.response_status != null) {
+      return replayOrConflict(row, requestHash, key, correlationId);
+    }
 
-  if (claimError || !claimed) {
+    if (row && row.request_hash !== requestHash) {
+      return apiError({
+        code: "IDEMPOTENCY_KEY_REUSE",
+        details: { idempotencyKey: key },
+      });
+    }
+
+    const { data: taken } = await service.rpc("takeover_stale_idempotency_claim", {
+      p_organization_id: params.organizationId,
+      p_idempotency_key: key,
+      p_route: params.route,
+      p_method: params.method,
+      p_request_hash: requestHash,
+      p_correlation_id: correlationId,
+      p_lease_seconds: IDEMPOTENCY_LEASE_SECONDS,
+    });
+
+    const takenRow = (Array.isArray(taken) ? taken[0] : taken) as
+      | IdempotencyRow
+      | null
+      | undefined;
+
+    if (!takenRow?.id) {
+      return apiError({
+        code: "CONFLICT",
+        message: "Idempotency key is being processed. Retry shortly.",
+      });
+    }
+
+    claimId = takenRow.id;
+  } else if (claimError || !claimed) {
     return apiError({
       code: "INTERNAL_ERROR",
       message: claimError?.message ?? "Failed to claim idempotency key.",
@@ -93,7 +130,7 @@ export async function withIdempotency(params: {
     const cloned = response.clone();
     const body = await cloned.json().catch(() => ({ success: false }));
 
-    await service
+    const { data: finalized, error: finalizeError } = await service
       .from("idempotency_keys")
       .update({
         response_status: response.status,
@@ -101,12 +138,22 @@ export async function withIdempotency(params: {
         case_id: params.caseId ?? null,
         correlation_id: correlationId,
       })
-      .eq("id", claimed.id);
+      .eq("id", claimId!)
+      .is("response_status", null)
+      .select("id")
+      .maybeSingle();
+
+    if (finalizeError || !finalized) {
+      return apiError({
+        code: "CONFLICT",
+        message:
+          "Idempotency claim was lost or already finalized. Retry shortly.",
+      });
+    }
 
     return response;
   } catch (error) {
-    // Release the claim so a retry can proceed after a crash mid-handler.
-    await service.from("idempotency_keys").delete().eq("id", claimed.id);
+    await service.from("idempotency_keys").delete().eq("id", claimId!);
     throw error;
   }
 }

@@ -8,6 +8,8 @@ import { handleFailOnceJob } from "@/lib/jobs/handlers/fail-once";
 import { handleIntegrationExecuteJob } from "@/lib/jobs/handlers/integration-execute";
 import { handleIntegrationStatusInquiryJob } from "@/lib/jobs/handlers/integration-status";
 
+const HEARTBEAT_MS = 60_000;
+
 /**
  * System job handlers (documented auth bypass):
  * - sla.refresh_case: evaluates SLA state for a case; org-scoped payload
@@ -18,6 +20,9 @@ import { handleIntegrationStatusInquiryJob } from "@/lib/jobs/handlers/integrati
  *
  * Handlers must not change case workflow status. They run with service-role
  * only inside the worker process (server-only).
+ *
+ * Completion/failure updates are fenced by locked_by + attempt_count so a
+ * reclaimed job cannot be finalized by its previous worker.
  */
 export async function processClaimedJobs(
   workerId: string,
@@ -39,6 +44,11 @@ export async function processClaimedJobs(
   for (const job of (jobs ?? []) as BackgroundJob[]) {
     const correlationId = job.correlation_id ?? crypto.randomUUID();
     const attemptNo = job.attempt_count;
+    const fence = {
+      jobId: job.id,
+      lockedBy: workerId,
+      attemptCount: attemptNo,
+    };
 
     await service.from("background_job_attempts").insert({
       job_id: job.id,
@@ -47,6 +57,8 @@ export async function processClaimedJobs(
       correlation_id: correlationId,
     });
 
+    const stopHeartbeat = startJobHeartbeat(service, fence);
+
     try {
       await runWithCorrelationId(correlationId, async () =>
         runWithSupabaseClient(service, async () => {
@@ -54,16 +66,18 @@ export async function processClaimedJobs(
         })
       );
 
-      await service
-        .from("background_jobs")
-        .update({
-          status: "succeeded",
-          completed_at: new Date().toISOString(),
-          locked_at: null,
-          locked_by: null,
-          last_error: null,
-        })
-        .eq("id", job.id);
+      const kept = await finalizeJob(service, fence, {
+        status: "succeeded",
+        completed_at: new Date().toISOString(),
+        locked_at: null,
+        locked_by: null,
+        last_error: null,
+      });
+
+      if (!kept) {
+        // Lost fence to a reclaiming worker — do not touch attempt rows further.
+        continue;
+      }
 
       await service
         .from("background_job_attempts")
@@ -86,17 +100,18 @@ export async function processClaimedJobs(
         Date.now() + (immediate ? 0 : backoffMs(job.attempt_count))
       );
 
-      await service
-        .from("background_jobs")
-        .update({
-          status: dead ? "dead_letter" : "failed",
-          last_error: message.slice(0, 2000),
-          run_at: dead ? job.run_at : nextRun.toISOString(),
-          locked_at: null,
-          locked_by: null,
-          completed_at: dead ? new Date().toISOString() : null,
-        })
-        .eq("id", job.id);
+      const kept = await finalizeJob(service, fence, {
+        status: dead ? "dead_letter" : "failed",
+        last_error: message.slice(0, 2000),
+        run_at: dead ? job.run_at : nextRun.toISOString(),
+        locked_at: null,
+        locked_by: null,
+        completed_at: dead ? new Date().toISOString() : null,
+      });
+
+      if (!kept) {
+        continue;
+      }
 
       await service
         .from("background_job_attempts")
@@ -126,6 +141,8 @@ export async function processClaimedJobs(
       }
 
       failed += 1;
+    } finally {
+      stopHeartbeat();
     }
   }
 
@@ -134,6 +151,54 @@ export async function processClaimedJobs(
     succeeded,
     failed,
   };
+}
+
+type JobFence = {
+  jobId: string;
+  lockedBy: string;
+  attemptCount: number;
+};
+
+async function finalizeJob(
+  service: ReturnType<typeof createServiceClient>,
+  fence: JobFence,
+  patch: Record<string, unknown>
+): Promise<boolean> {
+  const { data, error } = await service
+    .from("background_jobs")
+    .update(patch)
+    .eq("id", fence.jobId)
+    .eq("locked_by", fence.lockedBy)
+    .eq("attempt_count", fence.attemptCount)
+    .eq("status", "running")
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  return Boolean(data);
+}
+
+function startJobHeartbeat(
+  service: ReturnType<typeof createServiceClient>,
+  fence: JobFence
+): () => void {
+  const timer = setInterval(() => {
+    void service
+      .from("background_jobs")
+      .update({ locked_at: new Date().toISOString() })
+      .eq("id", fence.jobId)
+      .eq("locked_by", fence.lockedBy)
+      .eq("attempt_count", fence.attemptCount)
+      .eq("status", "running");
+  }, HEARTBEAT_MS);
+
+  if (typeof timer.unref === "function") {
+    timer.unref();
+  }
+
+  return () => clearInterval(timer);
 }
 
 async function dispatchJob(job: BackgroundJob): Promise<void> {

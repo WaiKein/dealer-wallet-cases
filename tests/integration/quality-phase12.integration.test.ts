@@ -112,9 +112,15 @@ describe("execution job processing", () => {
       run_at: new Date().toISOString(),
     };
 
-    const jobsUpdate = vi.fn(() => ({
-      eq: vi.fn(async () => ({ error: null })),
-    }));
+    const fenceChain = {
+      eq: vi.fn(function eq() {
+        return fenceChain;
+      }),
+      select: vi.fn(() => ({
+        maybeSingle: vi.fn(async () => ({ data: { id: "job-1" }, error: null })),
+      })),
+    };
+    const jobsUpdate = vi.fn(() => fenceChain);
     const attemptsUpdate = vi.fn(() => ({
       eq: vi.fn(() => ({
         eq: vi.fn(async () => ({ error: null })),
@@ -146,6 +152,8 @@ describe("execution job processing", () => {
     const result = await processClaimedJobs("worker-beta", 1);
     expect(result.succeeded).toBe(1);
     expect(updates.some((payload) => payload.status === "succeeded")).toBe(true);
+    expect(fenceChain.eq).toHaveBeenCalledWith("locked_by", "worker-beta");
+    expect(fenceChain.eq).toHaveBeenCalledWith("attempt_count", 1);
   });
 });
 

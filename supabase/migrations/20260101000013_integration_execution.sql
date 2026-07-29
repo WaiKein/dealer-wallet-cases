@@ -105,18 +105,52 @@ CREATE TRIGGER case_integration_executions_set_updated_at
 ALTER TABLE public.case_integration_executions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.case_integration_attempts ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users view org integration executions"
+CREATE POLICY "Users view accessible case executions"
   ON public.case_integration_executions FOR SELECT
-  USING (organization_id = public.get_my_org_id());
+  USING (public.can_access_case(case_id));
 
 -- Writes are restricted to service_role (workers / domain services).
--- Authenticated clients may only read org-scoped execution history.
 
-CREATE POLICY "Users view org integration attempts"
+CREATE POLICY "Users view accessible case attempts"
   ON public.case_integration_attempts FOR SELECT
-  USING (organization_id = public.get_my_org_id());
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.case_integration_executions e
+      WHERE e.id = execution_id
+        AND public.can_access_case(e.case_id)
+    )
+  );
 
-GRANT SELECT ON public.case_integration_executions TO authenticated;
+REVOKE ALL ON TABLE public.case_integration_executions FROM authenticated;
+GRANT SELECT (
+  id,
+  organization_id,
+  case_id,
+  approval_request_id,
+  provider,
+  operation,
+  status,
+  correlation_id,
+  external_transaction_ref,
+  requested_amount,
+  approved_amount,
+  currency,
+  adjustment_type,
+  attempt_count,
+  last_attempt_at,
+  next_retry_at,
+  response_code,
+  sanitised_response_summary,
+  failure_category,
+  failure_message,
+  unknown_result_reason,
+  requires_status_inquiry,
+  version,
+  created_at,
+  updated_at,
+  completed_at
+) ON TABLE public.case_integration_executions TO authenticated;
 GRANT SELECT ON public.case_integration_attempts TO authenticated;
 GRANT ALL ON public.case_integration_executions TO service_role;
 GRANT ALL ON public.case_integration_attempts TO service_role;

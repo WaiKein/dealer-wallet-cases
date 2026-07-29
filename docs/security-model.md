@@ -87,22 +87,28 @@ Service-role clients are used only in server workers, notification dispatch enri
 - `handle_new_user` **always** assigns `requester`. `raw_user_meta_data.role` is ignored.
 - Elevated roles (`admin`, `approver`, `operations_agent`, `team_lead`) are granted only through the authenticated admin console / admin profile updates.
 
-## Integration executions (migration `022`)
+## Integration executions (migration `022` / `023`)
 
-- Authenticated clients have **SELECT-only** RLS on `case_integration_executions` and `case_integration_attempts`.
-- INSERT/UPDATE are restricted to `service_role` (domain services and workers).
+- Authenticated clients have **SELECT-only**, **case-scoped** access (`can_access_case`).
+- Raw financial columns (`account_id`, `reference_id`, hashes, idempotency keys) are withheld from authenticated grants.
+- Safe view `v_case_integration_executions_safe` returns role-masked identifiers.
+- INSERT/UPDATE are restricted to `service_role`.
 - Manual retry and worker execute paths re-validate that the execution is linked to an **APPROVED** approval request for the same case.
 
 ## Idempotency and jobs
 
-- HTTP idempotency keys are **claimed atomically** (insert-first) before the handler runs; losers replay a completed response or receive `CONFLICT` if still in flight.
+- HTTP idempotency keys are **claimed atomically** (insert-first) before the handler runs.
+- Pending claims carry a lease (`claimed_at`); stale leases are taken over via `takeover_stale_idempotency_claim`.
+- Finalization of the claim is verified; lost leases return `CONFLICT`.
+- `claim_background_jobs` is **REVOKE**d from `PUBLIC` / `anon` / `authenticated` (service_role only).
 - `claim_background_jobs` reclaims `running` jobs whose `locked_at` is older than the lock timeout (default 5 minutes).
+- Worker completion/failure updates are fenced by `locked_by` + `attempt_count` + `status = running`, with heartbeat renewal of `locked_at`.
 
 ## CSV export
 
 - Management and exception CSV exports neutralize formula injection by prefixing cells that begin with `=`, `+`, `-`, `@`, tab, or CR.
 
-Apply migrations through `20260101000022_security_fixes.sql`:
+Apply migrations through `20260101000023_security_hardening_followup.sql`:
 
 ```bash
 npx supabase db push

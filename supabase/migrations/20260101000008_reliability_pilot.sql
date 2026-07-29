@@ -175,6 +175,12 @@ GRANT ALL ON public.background_jobs TO service_role;
 GRANT ALL ON public.background_job_attempts TO service_role;
 GRANT EXECUTE ON FUNCTION public.claim_background_jobs(INTEGER, TEXT, INTEGER) TO service_role;
 
+REVOKE ALL ON FUNCTION public.claim_background_jobs(INTEGER, TEXT, INTEGER)
+  FROM PUBLIC, anon, authenticated;
+
+GRANT EXECUTE ON FUNCTION public.claim_background_jobs(INTEGER, TEXT, INTEGER)
+  TO service_role;
+
 ALTER TABLE public.idempotency_keys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.background_jobs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.background_job_attempts ENABLE ROW LEVEL SECURITY;
