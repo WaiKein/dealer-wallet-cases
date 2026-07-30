@@ -46,6 +46,7 @@ jobs:
           test -f supabase/migrations/20260101000023_security_hardening_followup.sql
           test -f supabase/migrations/20260101000024_idempotency_claim_token.sql
           test -f supabase/migrations/20260101000025_approval_service_role_grants.sql
+          test -f supabase/migrations/20260101000026_repair_seed_pending_approvals.sql
           supabase migration list --local
 
   simulator-smoke:

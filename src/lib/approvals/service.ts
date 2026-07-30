@@ -210,7 +210,14 @@ export async function decideApprovalForCase(params: {
     .limit(1)
     .maybeSingle();
 
-  if (requestError || !request) {
+  if (requestError) {
+    return {
+      success: false,
+      error: requestError.message,
+      code: "INTERNAL_ERROR",
+    };
+  }
+  if (!request) {
     return {
       success: false,
       error: "No pending approval request for this case.",
