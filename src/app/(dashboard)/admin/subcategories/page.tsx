@@ -31,17 +31,24 @@ export default async function AdminSubcategoriesPage({
       label: `${item.name} (${item.code})`,
     })) ?? [];
 
+  const fields = [
+    {
+      name: "category_id",
+      label: "Category",
+      type: "select" as const,
+      options: categoryOptions,
+    },
+    { name: "code", label: "Code", type: "text" as const },
+    { name: "name", label: "Name", type: "text" as const },
+    { name: "is_active", label: "Active", type: "checkbox" as const },
+  ];
+
   return (
     <div className="space-y-6">
       <AdminFilterBar q={params.q} active={params.active} />
       <AdminUpsertForm
         title="Create subcategory"
-        fields={[
-          { name: "category_id", label: "Category", type: "select", options: categoryOptions },
-          { name: "code", label: "Code", type: "text" },
-          { name: "name", label: "Name", type: "text" },
-          { name: "is_active", label: "Active", type: "checkbox" },
-        ]}
+        fields={fields}
         action={adminUpsertSubcategoryAction}
         submitLabel="Create subcategory"
       />
@@ -49,14 +56,24 @@ export default async function AdminSubcategoriesPage({
         <EmptyState message="No subcategories found." />
       ) : (
         result.data.items.map((item) => (
-          <div key={item.id} className="flex items-center justify-between rounded-lg border p-4">
-            <div>
-              <p className="font-medium">
-                {item.name} <span className="text-muted-foreground">({item.code})</span>
-              </p>
-              <p className="text-xs text-muted-foreground">v{item.version ?? 1}</p>
+          <div key={item.id} className="space-y-3 rounded-lg border p-4">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="font-medium">
+                  {item.name}{" "}
+                  <span className="text-muted-foreground">({item.code})</span>
+                </p>
+                <p className="text-xs text-muted-foreground">v{item.version ?? 1}</p>
+              </div>
+              <ActiveBadge active={item.is_active} />
             </div>
-            <ActiveBadge active={item.is_active} />
+            <AdminUpsertForm
+              title={`Edit ${item.name}`}
+              initial={item as unknown as Record<string, unknown>}
+              fields={fields}
+              action={adminUpsertSubcategoryAction}
+              submitLabel="Save subcategory"
+            />
           </div>
         ))
       )}

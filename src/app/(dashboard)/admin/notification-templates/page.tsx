@@ -9,6 +9,24 @@ import { adminUpsertNotificationTemplateAction } from "@/lib/admin/actions";
 import { listAdminNotificationTemplates } from "@/lib/admin/config";
 import { requireAdmin } from "@/lib/auth/session";
 
+const templateFields = [
+  { name: "code", label: "Code", type: "text" as const },
+  { name: "name", label: "Name", type: "text" as const },
+  {
+    name: "channel",
+    label: "Channel",
+    type: "select" as const,
+    options: [
+      { value: "email", label: "Email" },
+      { value: "in_app", label: "In-app" },
+    ],
+  },
+  { name: "event_type", label: "Event type", type: "text" as const },
+  { name: "subject_template", label: "Subject template", type: "text" as const },
+  { name: "body_template", label: "Body template", type: "textarea" as const },
+  { name: "is_active", label: "Active", type: "checkbox" as const },
+];
+
 export default async function AdminNotificationTemplatesPage({
   searchParams,
 }: {
@@ -30,23 +48,7 @@ export default async function AdminNotificationTemplatesPage({
       <TemplatePreviewPanel />
       <AdminUpsertForm
         title="Create notification template"
-        fields={[
-          { name: "code", label: "Code", type: "text" },
-          { name: "name", label: "Name", type: "text" },
-          {
-            name: "channel",
-            label: "Channel",
-            type: "select",
-            options: [
-              { value: "email", label: "Email" },
-              { value: "in_app", label: "In-app" },
-            ],
-          },
-          { name: "event_type", label: "Event type", type: "text" },
-          { name: "subject_template", label: "Subject template", type: "text" },
-          { name: "body_template", label: "Body template", type: "textarea" },
-          { name: "is_active", label: "Active", type: "checkbox" },
-        ]}
+        fields={templateFields}
         action={adminUpsertNotificationTemplateAction}
         submitLabel="Create template"
       />
@@ -54,18 +56,27 @@ export default async function AdminNotificationTemplatesPage({
         <EmptyState message="No templates found." />
       ) : (
         result.data.items.map((item) => (
-          <div key={item.id} className="rounded-lg border p-4">
-            <div className="mb-2 flex items-center justify-between">
-              <p className="font-medium">{item.name}</p>
+          <div key={item.id} className="space-y-3 rounded-lg border p-4">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="font-medium">{item.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {item.channel} · {item.event_type} · v{item.version}
+                </p>
+              </div>
               <ActiveBadge active={item.is_active} />
             </div>
-            <p className="text-sm text-muted-foreground">
-              {item.channel} · {item.event_type} · v{item.version}
-            </p>
-            <pre className="mt-2 overflow-x-auto rounded bg-muted p-2 text-xs">
+            <pre className="overflow-x-auto rounded bg-muted p-2 text-xs">
               {item.subject_template ? `${item.subject_template}\n\n` : ""}
               {item.body_template}
             </pre>
+            <AdminUpsertForm
+              title={`Edit ${item.name}`}
+              initial={item as unknown as Record<string, unknown>}
+              fields={templateFields}
+              action={adminUpsertNotificationTemplateAction}
+              submitLabel="Save template"
+            />
           </div>
         ))
       )}

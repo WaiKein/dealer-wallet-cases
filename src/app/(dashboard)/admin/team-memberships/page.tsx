@@ -28,25 +28,29 @@ export default async function AdminTeamMembershipsPage({
   }
 
   const teamOptions =
-    teams.data?.items.map((team) => ({ value: team.id, label: `${team.name} (${team.code})` })) ??
-    [];
+    teams.data?.items.map((team) => ({
+      value: team.id,
+      label: `${team.name} (${team.code})`,
+    })) ?? [];
   const userOptions =
     users.data?.items.map((user) => ({
       value: user.id,
       label: `${user.full_name} <${user.email}>`,
     })) ?? [];
 
+  const fields = [
+    { name: "group_id", label: "Team", type: "select" as const, options: teamOptions },
+    { name: "user_id", label: "User", type: "select" as const, options: userOptions },
+    { name: "is_lead", label: "Team lead", type: "checkbox" as const },
+    { name: "is_active", label: "Active", type: "checkbox" as const },
+  ];
+
   return (
     <div className="space-y-6">
       <AdminFilterBar q={params.q} active={params.active} />
       <AdminUpsertForm
         title="Add membership"
-        fields={[
-          { name: "group_id", label: "Team", type: "select", options: teamOptions },
-          { name: "user_id", label: "User", type: "select", options: userOptions },
-          { name: "is_lead", label: "Team lead", type: "checkbox" },
-          { name: "is_active", label: "Active", type: "checkbox" },
-        ]}
+        fields={fields}
         action={adminUpsertTeamMembershipAction}
         submitLabel="Add member"
       />
@@ -54,15 +58,24 @@ export default async function AdminTeamMembershipsPage({
         <EmptyState message="No memberships found." />
       ) : (
         memberships.data.items.map((row) => (
-          <div key={row.id} className="flex items-center justify-between rounded-lg border p-4">
-            <div>
-              <p className="font-medium">
-                {row.profile?.full_name ?? row.user_id}{" "}
-                {row.is_lead ? "(lead)" : ""}
-              </p>
-              <p className="text-sm text-muted-foreground">{row.profile?.email}</p>
+          <div key={row.id} className="space-y-3 rounded-lg border p-4">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="font-medium">
+                  {row.profile?.full_name ?? row.user_id}{" "}
+                  {row.is_lead ? "(lead)" : ""}
+                </p>
+                <p className="text-sm text-muted-foreground">{row.profile?.email}</p>
+              </div>
+              <ActiveBadge active={row.is_active !== false} />
             </div>
-            <ActiveBadge active={row.is_active !== false} />
+            <AdminUpsertForm
+              title={`Edit membership · ${row.profile?.full_name ?? row.user_id}`}
+              initial={row as unknown as Record<string, unknown>}
+              fields={fields}
+              action={adminUpsertTeamMembershipAction}
+              submitLabel="Save membership"
+            />
           </div>
         ))
       )}

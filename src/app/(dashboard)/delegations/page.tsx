@@ -40,10 +40,40 @@ export default async function DelegationsPage() {
     .neq("id", profile.id)
     .order("full_name");
 
+  const usersById = new Map(
+    (orgUsers ?? []).map((user) => [user.id, user] as const)
+  );
+  // Include current user for label resolution when they appear as delegator/delegate.
+  usersById.set(profile.id, {
+    id: profile.id,
+    full_name: profile.full_name,
+    email: profile.email,
+  });
+
   const userOptions = (orgUsers ?? []).map((user) => ({
     value: user.id,
     label: `${user.full_name} <${user.email}>`,
   }));
+
+  const fields = [
+    {
+      name: "delegate_id",
+      label: "Delegate",
+      type: "select" as const,
+      options: userOptions,
+    },
+    {
+      name: "approval_limit",
+      label: "Approval limit (optional)",
+      type: "number" as const,
+    },
+    { name: "is_active", label: "Active", type: "checkbox" as const },
+  ];
+
+  function userLabel(id: string) {
+    const user = usersById.get(id);
+    return user ? `${user.full_name}` : id.slice(0, 8);
+  }
 
   return (
     <div className="space-y-6">
@@ -55,20 +85,7 @@ export default async function DelegationsPage() {
       </div>
       <AdminUpsertForm
         title="Create delegation"
-        fields={[
-          {
-            name: "delegate_id",
-            label: "Delegate",
-            type: "select",
-            options: userOptions,
-          },
-          {
-            name: "approval_limit",
-            label: "Approval limit (optional)",
-            type: "number",
-          },
-          { name: "is_active", label: "Active", type: "checkbox" },
-        ]}
+        fields={fields}
         action={upsertApprovalDelegationAction}
         submitLabel="Create delegation"
       />
@@ -76,19 +93,27 @@ export default async function DelegationsPage() {
         <EmptyState message="No delegations found." />
       ) : (
         (items ?? []).map((item) => (
-          <div
-            key={item.id}
-            className="flex items-center justify-between rounded-lg border p-4"
-          >
-            <div>
-              <p className="font-medium text-sm">
-                {item.delegator_id.slice(0, 8)} → {item.delegate_id.slice(0, 8)}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                limit {item.approval_limit ?? "unlimited"} · v{item.version}
-              </p>
+          <div key={item.id} className="space-y-3 rounded-lg border p-4">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="font-medium text-sm">
+                  {userLabel(item.delegator_id)} → {userLabel(item.delegate_id)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  limit {item.approval_limit ?? "unlimited"} · v{item.version}
+                </p>
+              </div>
+              <ActiveBadge active={item.is_active} />
             </div>
-            <ActiveBadge active={item.is_active} />
+            {(profile.role === "admin" || item.delegator_id === profile.id) && (
+              <AdminUpsertForm
+                title={`Edit delegation · ${userLabel(item.delegate_id)}`}
+                initial={item as unknown as Record<string, unknown>}
+                fields={fields}
+                action={upsertApprovalDelegationAction}
+                submitLabel="Save delegation"
+              />
+            )}
           </div>
         ))
       )}
