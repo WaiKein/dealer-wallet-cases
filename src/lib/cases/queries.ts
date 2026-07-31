@@ -646,6 +646,7 @@ export async function getDashboardStats(profile: Profile): Promise<{
     byStatus: Record<CaseStatus, number>;
     unassigned: number;
     myOpen: number;
+    resolvedToday: number;
   };
   error: string | null;
 }> {
@@ -663,7 +664,9 @@ export async function getDashboardStats(profile: Profile): Promise<{
   const supabase = await createClient();
   let query = supabase
     .from("cases")
-    .select("id, status, assigned_agent_id, requester_id, organization_id");
+    .select(
+      "id, status, assigned_agent_id, requester_id, organization_id, updated_at"
+    );
 
   if (profile.organization_id) {
     query = query.eq("organization_id", profile.organization_id);
@@ -676,7 +679,13 @@ export async function getDashboardStats(profile: Profile): Promise<{
   const { data, error } = await query;
   if (error) {
     return {
-      data: { total: 0, byStatus: emptyByStatus, unassigned: 0, myOpen: 0 },
+      data: {
+        total: 0,
+        byStatus: emptyByStatus,
+        unassigned: 0,
+        myOpen: 0,
+        resolvedToday: 0,
+      },
       error: error.message,
     };
   }
@@ -684,6 +693,9 @@ export async function getDashboardStats(profile: Profile): Promise<{
   const byStatus = { ...emptyByStatus };
   let unassigned = 0;
   let myOpen = 0;
+  let resolvedToday = 0;
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
 
   for (const item of data ?? []) {
     byStatus[item.status as CaseStatus] += 1;
@@ -703,6 +715,11 @@ export async function getDashboardStats(profile: Profile): Promise<{
     ) {
       myOpen += 1;
     }
+    if (item.status === "RESOLVED") {
+      if (item.updated_at && new Date(item.updated_at) >= startOfDay) {
+        resolvedToday += 1;
+      }
+    }
   }
 
   return {
@@ -711,6 +728,7 @@ export async function getDashboardStats(profile: Profile): Promise<{
       byStatus,
       unassigned,
       myOpen,
+      resolvedToday,
     },
     error: null,
   };

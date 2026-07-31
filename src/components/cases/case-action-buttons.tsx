@@ -44,13 +44,7 @@ export function CaseActionButtons({
   }
 
   return (
-    <div className="space-y-3 rounded-lg border bg-card p-4">
-      <div>
-        <h3 className="font-medium">Agent actions</h3>
-        <p className="text-sm text-muted-foreground">
-          Claim the case for your group or acknowledge first response.
-        </p>
-      </div>
+    <div className="space-y-3">
       {error && (
         <Alert className="border-destructive/50 bg-destructive/10">
           <AlertDescription>{error}</AlertDescription>

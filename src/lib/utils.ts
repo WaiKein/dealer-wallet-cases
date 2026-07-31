@@ -28,3 +28,19 @@ export function formatCaseAge(createdAt: string, now = new Date()): string {
   const days = Math.floor(hours / 24);
   return `${days}d ${hours % 24}h`;
 }
+
+/** Compact remaining/overdue SLA clock (e.g. 42m, 1h 20m, −3h). */
+export function formatSlaRemaining(dueAt: string, now = new Date()): string {
+  const ms = new Date(dueAt).getTime() - now.getTime();
+  const abs = Math.abs(ms);
+  const totalMinutes = Math.floor(abs / 60_000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const body =
+    hours === 0
+      ? `${minutes}m`
+      : minutes === 0
+        ? `${hours}h`
+        : `${hours}h ${minutes}m`;
+  return ms < 0 ? `−${body}` : body;
+}

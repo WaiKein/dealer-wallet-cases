@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { CaseFilters } from "@/components/cases/case-filters";
 import { CaseList } from "@/components/cases/case-list";
-import { SavedViewsToolbar } from "@/components/cases/saved-views-toolbar";
+import { CasesCommandBar } from "@/components/cases/cases-command-bar";
 import { PageHeader } from "@/components/layout/page-header";
-import { CommandToolbar } from "@/components/ui/command-toolbar";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,10 +15,6 @@ import type { CaseListFilterInput } from "@/lib/validations/case";
 
 interface CasesPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
-}
-
-function FiltersFallback() {
-  return <Skeleton className="h-24 w-full rounded-lg" />;
 }
 
 export default async function CasesPage({ searchParams }: CasesPageProps) {
@@ -45,6 +39,12 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
   ]);
 
   const openCount = cases?.length ?? 0;
+  const attention =
+    cases?.filter((item) =>
+      item.sla_records?.some(
+        (sla) => sla.state === "DUE_SOON" || sla.state === "BREACHED"
+      )
+    ).length ?? 0;
 
   return (
     <div className="space-y-4">
@@ -53,7 +53,7 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
         description={
           view
             ? `${openCount} in view · Active view: ${view.name}`
-            : `${openCount} matching · Track requests through the workflow.`
+            : `${openCount} matching · ${attention} need attention`
         }
         action={
           canCreateCase(profile.role) ? (
@@ -64,22 +64,9 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
         }
       />
 
-      <div className="flex flex-wrap gap-2">
-        <QuickView href="/cases" label="All" />
-        <QuickView href="/cases?status=PENDING_APPROVAL" label="Pending approval" />
-        <QuickView href="/workspace?queue=breached" label="SLA at risk" />
-      </div>
-
-      <CommandToolbar>
-        <div className="min-w-0 flex-1 space-y-3">
-          <Suspense fallback={<FiltersFallback />}>
-            <SavedViewsToolbar views={views} />
-          </Suspense>
-          <Suspense fallback={<FiltersFallback />}>
-            <CaseFilters />
-          </Suspense>
-        </div>
-      </CommandToolbar>
+      <Suspense fallback={<Skeleton className="h-24 w-full rounded-lg" />}>
+        <CasesCommandBar views={views} />
+      </Suspense>
 
       {error ? (
         <Alert className="border-destructive/50 bg-destructive/10">
@@ -90,16 +77,5 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
         <CaseList cases={cases} />
       )}
     </div>
-  );
-}
-
-function QuickView({ href, label }: { href: string; label: string }) {
-  return (
-    <Link
-      href={href}
-      className="rounded-full border px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-    >
-      {label}
-    </Link>
   );
 }

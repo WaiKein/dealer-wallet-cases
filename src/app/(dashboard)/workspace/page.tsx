@@ -36,19 +36,55 @@ export default async function WorkspacePage({
   const queues: {
     key: QueueKey;
     label: string;
+    metricLabel: string;
     cases: CaseWithRelations[];
     tone?: "warning";
+    showInMetrics?: boolean;
   }[] = [
-    { key: "mine", label: "My queue", cases: data.myAssigned },
-    { key: "group", label: "Group queue", cases: data.unassignedForTeam },
-    { key: "approvals", label: "Approvals waiting", cases: data.pendingApprovals },
-    { key: "due", label: "Due soon", cases: data.dueSoon, tone: "warning" },
-    { key: "breached", label: "At risk", cases: data.breached, tone: "warning" },
+    {
+      key: "mine",
+      label: "My queue",
+      metricLabel: "Assigned to me",
+      cases: data.myAssigned,
+      showInMetrics: true,
+    },
+    {
+      key: "group",
+      label: "Group queue",
+      metricLabel: "Unassigned in my groups",
+      cases: data.unassignedForTeam,
+      showInMetrics: true,
+    },
+    {
+      key: "approvals",
+      label: "Approvals",
+      metricLabel: "Approvals waiting",
+      cases: data.pendingApprovals,
+      showInMetrics: true,
+    },
+    {
+      key: "due",
+      label: "Due soon",
+      metricLabel: "Due soon",
+      cases: data.dueSoon,
+      tone: "warning",
+    },
+    {
+      key: "breached",
+      label: "At risk",
+      metricLabel: "At risk",
+      cases: data.breached,
+      tone: "warning",
+    },
   ];
 
   const activeKey = (queues.find((q) => q.key === params.queue)?.key ??
     "mine") as QueueKey;
   const active = queues.find((q) => q.key === activeKey)!;
+  const metricQueues = queues.filter((q) => q.showInMetrics);
+  const pillQueues = queues.filter((q) =>
+    ["mine", "group", "breached"].includes(q.key)
+  );
 
   return (
     <div className="space-y-6">
@@ -58,18 +94,22 @@ export default async function WorkspacePage({
       />
 
       <div className="grid gap-3 sm:grid-cols-3">
-        {queues.slice(0, 3).map((queue) => (
-          <div key={queue.key} className="ops-panel p-4">
+        {metricQueues.map((queue) => (
+          <Link
+            key={queue.key}
+            href={`/workspace?queue=${queue.key}`}
+            className="ops-panel p-4 transition-colors hover:bg-muted/30"
+          >
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {queue.label}
+              {queue.metricLabel}
             </p>
             <p className="mt-2 text-3xl font-semibold">{queue.cases.length}</p>
-          </div>
+          </Link>
         ))}
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {queues.map((queue) => (
+        {pillQueues.map((queue) => (
           <Link
             key={queue.key}
             href={`/workspace?queue=${queue.key}`}

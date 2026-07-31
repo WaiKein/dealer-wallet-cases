@@ -1,5 +1,4 @@
 import {
-  AGEING_BAND_LABELS,
   type ManagementDashboardSnapshot,
   type NamedCount,
 } from "@/lib/management/types";
@@ -102,126 +101,119 @@ export function ManagementDashboardView({
   return (
     <div className="space-y-6">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi title="Cases submitted" value={kpis.cases_submitted} />
-        <Kpi title="Cases resolved" value={kpis.cases_resolved} />
-        <Kpi title="Current backlog" value={kpis.current_backlog} />
-        <Kpi title="Unassigned" value={kpis.unassigned_cases} />
-        <Kpi title="Pending approval" value={kpis.pending_approval} />
-        <Kpi title="Awaiting requester" value={kpis.awaiting_requester} />
-        <Kpi title="Failed integration" value={kpis.failed_integration} />
-        <Kpi title="Unknown integration" value={kpis.unknown_integration} />
-        <Kpi
-          title="First-response SLA"
-          value={fmtPct(kpis.first_response_sla_compliance_pct)}
-        />
+        <Kpi title="Backlog" value={kpis.current_backlog} />
         <Kpi
           title="Resolution SLA"
           value={fmtPct(kpis.resolution_sla_compliance_pct)}
         />
         <Kpi
-          title="Avg first response"
-          value={fmtHours(kpis.avg_first_response_hours)}
-        />
-        <Kpi
-          title="Avg resolution"
+          title="Median resolution"
           value={fmtHours(kpis.avg_resolution_hours)}
         />
         <Kpi title="Reopen rate" value={fmtPct(kpis.reopen_rate_pct)} />
-        <Kpi
-          title="Approval turnaround"
-          value={fmtHours(kpis.avg_approval_turnaround_hours)}
-        />
-        <Kpi
-          title="Integration success"
-          value={fmtPct(kpis.integration_success_rate_pct)}
-        />
-        <Kpi
-          title="Amount requested"
-          value={formatCurrency(Number(kpis.adjustment_amount_requested))}
-        />
-        <Kpi
-          title="Amount approved"
-          value={formatCurrency(Number(kpis.adjustment_amount_approved))}
-        />
-        <Kpi
-          title="Amount executed"
-          value={formatCurrency(Number(kpis.adjustment_amount_executed))}
-        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <ObjectBreakdown title="Cases by status" data={breakdowns.byStatus} />
-        <ObjectBreakdown title="Cases by priority" data={breakdowns.byPriority} />
-        <NamedBreakdown title="Cases by category" rows={breakdowns.byCategory} />
-        <NamedBreakdown
-          title="Cases by subcategory"
-          rows={breakdowns.bySubcategory}
-        />
-        <NamedBreakdown title="Cases by team" rows={breakdowns.byTeam} />
-        <NamedBreakdown title="Cases by agent" rows={breakdowns.byAgent} />
-        <ObjectBreakdown
-          title="By approval status"
-          data={breakdowns.byApprovalStatus}
-        />
-        <ObjectBreakdown
-          title="By execution status"
-          data={breakdowns.byExecutionStatus}
-        />
-        <NamedBreakdown
-          title="SLA breaches by team"
-          rows={breakdowns.slaBreachesByTeam}
-        />
-        <ObjectBreakdown
-          title="Backlog ageing"
-          data={Object.fromEntries(
-            Object.entries(AGEING_BAND_LABELS).map(([key, label]) => [
-              label,
-              breakdowns.backlogAgeing[key] ?? 0,
-            ])
-          )}
-        />
-      </div>
-
-      <div className="ops-panel p-4">
-        <h3 className="text-sm font-semibold">Daily created vs resolved</h3>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Bounded to the selected date range (max 366 days).
-        </p>
-        <div className="mt-4 space-y-3">
-          {breakdowns.dailyCreatedVsResolved.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No trend data</p>
-          ) : (
-            breakdowns.dailyCreatedVsResolved.map((point) => (
-              <div key={point.date} className="space-y-1">
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{point.date}</span>
-                  <span>
-                    +{point.created} / ✓{point.resolved}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="h-2 rounded bg-muted">
-                    <div
-                      className="h-2 rounded bg-foreground/70"
-                      style={{
-                        width: `${(point.created / maxTrend) * 100}%`,
-                      }}
-                    />
+        <div className="ops-panel p-4">
+          <h3 className="text-sm font-semibold">Submitted vs resolved</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Daily trend for the selected range.
+          </p>
+          <div className="mt-4 space-y-3">
+            {breakdowns.dailyCreatedVsResolved.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No trend data</p>
+            ) : (
+              breakdowns.dailyCreatedVsResolved.slice(-14).map((point) => (
+                <div key={point.date} className="space-y-1">
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{point.date}</span>
+                    <span>
+                      +{point.created} / ✓{point.resolved}
+                    </span>
                   </div>
-                  <div className="h-2 rounded bg-muted">
-                    <div
-                      className="h-2 rounded bg-emerald-600/80"
-                      style={{
-                        width: `${(point.resolved / maxTrend) * 100}%`,
-                      }}
-                    />
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="h-2 rounded bg-muted">
+                      <div
+                        className="h-2 rounded bg-primary/80"
+                        style={{
+                          width: `${(point.created / maxTrend) * 100}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="h-2 rounded bg-muted">
+                      <div
+                        className="h-2 rounded bg-emerald-600/80"
+                        style={{
+                          width: `${(point.resolved / maxTrend) * 100}%`,
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
+        </div>
+        <div className="ops-panel space-y-3 p-4">
+          <h3 className="text-sm font-semibold">Service health</h3>
+          <div className="flex items-center justify-between text-sm">
+            <span>First response {fmtPct(kpis.first_response_sla_compliance_pct)}</span>
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
+              {(kpis.first_response_sla_compliance_pct ?? 0) >= 95
+                ? "Healthy"
+                : "Watch"}
+            </span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span>Resolution {fmtPct(kpis.resolution_sla_compliance_pct)}</span>
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+              {(kpis.resolution_sla_compliance_pct ?? 0) >= 95
+                ? "Healthy"
+                : "Watch"}
+            </span>
+          </div>
+          <div className="border-t pt-3 text-sm text-muted-foreground">
+            Failed integration {kpis.failed_integration} · Unknown{" "}
+            {kpis.unknown_integration} · Unassigned {kpis.unassigned_cases}
+          </div>
         </div>
       </div>
+
+      <NamedBreakdown title="Team performance" rows={breakdowns.byTeam} />
+
+      <details className="ops-panel p-4">
+        <summary className="cursor-pointer text-sm font-semibold">
+          More metrics
+        </summary>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Kpi title="Cases submitted" value={kpis.cases_submitted} />
+          <Kpi title="Cases resolved" value={kpis.cases_resolved} />
+          <Kpi title="Pending approval" value={kpis.pending_approval} />
+          <Kpi title="Awaiting requester" value={kpis.awaiting_requester} />
+          <Kpi
+            title="Avg first response"
+            value={fmtHours(kpis.avg_first_response_hours)}
+          />
+          <Kpi
+            title="Approval turnaround"
+            value={fmtHours(kpis.avg_approval_turnaround_hours)}
+          />
+          <Kpi
+            title="Integration success"
+            value={fmtPct(kpis.integration_success_rate_pct)}
+          />
+          <Kpi
+            title="Amount executed"
+            value={formatCurrency(Number(kpis.adjustment_amount_executed))}
+          />
+        </div>
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <ObjectBreakdown title="Cases by status" data={breakdowns.byStatus} />
+          <ObjectBreakdown title="Cases by priority" data={breakdowns.byPriority} />
+          <NamedBreakdown title="Cases by category" rows={breakdowns.byCategory} />
+          <NamedBreakdown title="Cases by agent" rows={breakdowns.byAgent} />
+        </div>
+      </details>
     </div>
   );
 }

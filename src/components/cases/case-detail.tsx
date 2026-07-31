@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { ApprovalPanel } from "@/components/cases/approval-panel";
 import { AuditTimeline } from "@/components/cases/audit-timeline";
 import { CaseActionButtons } from "@/components/cases/case-action-buttons";
@@ -13,17 +12,10 @@ import { PageBreadcrumb, PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   canAcknowledgeCase,
 } from "@/lib/auth/permissions";
 import { PRIORITY_LABELS } from "@/lib/auth/roles";
-import { formatCaseAge, formatCurrency, formatDateTime } from "@/lib/utils";
+import { formatCaseAge, formatCurrency, formatDateTime, formatSlaRemaining } from "@/lib/utils";
 import type { CaseSla, CaseWithRelations, Profile } from "@/types";
 
 interface CaseDetailProps {
@@ -88,7 +80,7 @@ export function CaseDetail({
         />
         <PageHeader
           title={caseData.title}
-          description={caseData.description}
+          description={undefined}
           badges={
             <>
               <CaseStatusBadge status={caseData.status} />
@@ -96,15 +88,25 @@ export function CaseDetail({
                 {PRIORITY_LABELS[caseData.priority]} priority
               </Badge>
               {resolution ? (
-                <Badge variant="secondary">
-                  Resolution SLA · <SlaStateBadge state={resolution.state} />
+                <Badge
+                  variant={
+                    resolution.state === "DUE_SOON" ||
+                    resolution.state === "BREACHED"
+                      ? "warning"
+                      : "secondary"
+                  }
+                >
+                  SLA{" "}
+                  {resolution.state === "COMPLETED"
+                    ? "Met"
+                    : formatSlaRemaining(resolution.due_at)}
                 </Badge>
               ) : null}
             </>
           }
           action={
-            <Button asChild variant="outline">
-              <Link href="/cases">Back to cases</Link>
+            <Button asChild>
+              <a href="#next-action">Take action</a>
             </Button>
           }
         />
@@ -112,24 +114,20 @@ export function CaseDetail({
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Request summary</CardTitle>
-              <CardDescription>
-                {caseData.case_number} · adjustment request facts
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2">
-              <DetailItem label="Account ID (system)" value={caseData.dealer_id} />
-              <DetailItem label="Reference ID" value={caseData.wallet_id} />
+          <div className="ops-panel space-y-4 p-4">
+            <h2 className="text-sm font-semibold">Request summary</h2>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <DetailItem label="Dealer / account" value={caseData.dealer_id} />
+              <DetailItem label="Reference" value={caseData.wallet_id} />
               <DetailItem
-                label="Adjustment"
+                label="Amount"
                 value={`${caseData.adjustment_type === "credit" ? "Credit" : "Debit"} · ${formatCurrency(Number(caseData.adjustment_amount), caseData.currency)}`}
               />
-              <DetailItem
-                label="Priority"
-                value={PRIORITY_LABELS[caseData.priority]}
-              />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {caseData.description}
+            </p>
+            <div className="grid gap-3 border-t pt-3 sm:grid-cols-2">
               <DetailItem
                 label="Category"
                 value={caseData.category?.name ?? "—"}
@@ -139,49 +137,36 @@ export function CaseDetail({
                 value={caseData.subcategory?.name ?? "—"}
               />
               <DetailItem
-                label="Assignment group"
-                value={caseData.assigned_group?.name ?? "Unassigned"}
-              />
-              <DetailItem
-                label="Assigned agent"
-                value={caseData.assigned_agent?.full_name ?? "Unassigned"}
-              />
-              <DetailItem
                 label="Requester"
                 value={caseData.requester?.full_name ?? caseData.requester_id}
-              />
-              <DetailItem
-                label="Approver"
-                value={caseData.approver?.full_name ?? "Not assigned"}
               />
               <DetailItem
                 label="Case age"
                 value={formatCaseAge(caseData.created_at)}
               />
-              <DetailItem
-                label="Created"
-                value={formatDateTime(caseData.created_at)}
-              />
-              {caseData.rejection_reason && (
+              {caseData.rejection_reason ? (
                 <DetailItem
                   label="Rejection reason"
                   value={caseData.rejection_reason}
                   className="sm:col-span-2"
                 />
-              )}
-              {caseData.resolution_notes && (
+              ) : null}
+              {caseData.resolution_notes ? (
                 <DetailItem
                   label="Resolution notes"
                   value={caseData.resolution_notes}
                   className="sm:col-span-2"
                 />
-              )}
-            </CardContent>
-          </Card>
+              ) : null}
+            </div>
+          </div>
 
-          <div className="grid gap-6 md:grid-cols-2">
-            <SlaCard title="First-response SLA" record={firstResponse} />
-            <SlaCard title="Resolution SLA" record={resolution} />
+          <div className="ops-panel p-4">
+            <h2 className="mb-3 text-sm font-semibold">Activity</h2>
+            <AuditTimeline
+              entries={caseData.audit_history ?? []}
+              title="Activity"
+            />
           </div>
 
           <CaseComments
@@ -194,26 +179,11 @@ export function CaseDetail({
             caseId={caseData.id}
             attachments={caseData.attachments ?? []}
           />
-        </div>
 
-        <div className="space-y-6">
-          <CaseActionButtons
-            caseId={caseData.id}
-            canClaim={canClaim}
-            canAcknowledge={canAcknowledge}
-          />
-
-          <StatusActionButtons
-            caseId={caseData.id}
-            currentStatus={caseData.status}
-            role={profile.role}
-            version={caseData.version ?? 1}
-            approvalVersion={
-              approvalRequest && typeof approvalRequest.version === "number"
-                ? approvalRequest.version
-                : undefined
-            }
-          />
+          <div className="grid gap-4 md:grid-cols-2">
+            <SlaCard title="First-response SLA" record={firstResponse} />
+            <SlaCard title="Resolution SLA" record={resolution} />
+          </div>
 
           <ApprovalPanel
             request={
@@ -225,7 +195,9 @@ export function CaseDetail({
                       approvalRequest.approved_amount == null
                         ? null
                         : Number(approvalRequest.approved_amount),
-                    approval_levels: Number(approvalRequest.approval_levels ?? 1),
+                    approval_levels: Number(
+                      approvalRequest.approval_levels ?? 1
+                    ),
                     approval_rule_code:
                       (approvalRequest.approval_rule_code as string | null) ??
                       null,
@@ -282,59 +254,80 @@ export function CaseDetail({
               sanitised_error: attempt.sanitised_error ?? null,
             }))}
           />
+        </div>
 
-          {canReassign && (
-            <ReassignAgentForm
+        <div className="space-y-6">
+          <div id="next-action" className="ops-panel space-y-3 p-4">
+            <h2 className="text-sm font-semibold">Next action</h2>
+            <p className="text-xs text-muted-foreground">
+              Only actions permitted for your role are shown.
+            </p>
+            <CaseActionButtons
               caseId={caseData.id}
-              currentAgentId={caseData.assigned_agent_id}
-              agents={agents}
+              canClaim={canClaim}
+              canAcknowledge={canAcknowledge}
             />
-          )}
+            <StatusActionButtons
+              caseId={caseData.id}
+              currentStatus={caseData.status}
+              role={profile.role}
+              version={caseData.version ?? 1}
+              approvalVersion={
+                approvalRequest && typeof approvalRequest.version === "number"
+                  ? approvalRequest.version
+                  : undefined
+              }
+            />
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Assignment history</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <AuditTimeline
-                entries={caseData.audit_history ?? []}
-                title="Assignment history"
-                eventFilter={["assignment", "reassignment", "claim"]}
+          <div className="ops-panel space-y-3 p-4">
+            <h2 className="text-sm font-semibold">Ownership</h2>
+            <DetailItem
+              label="Assignment group"
+              value={caseData.assigned_group?.name ?? "Unassigned"}
+            />
+            <DetailItem
+              label="Assigned agent"
+              value={caseData.assigned_agent?.full_name ?? "Unassigned agent"}
+            />
+            <DetailItem
+              label="Approver"
+              value={caseData.approver?.full_name ?? "Not assigned"}
+            />
+            {canReassign ? (
+              <ReassignAgentForm
+                caseId={caseData.id}
+                currentAgentId={caseData.assigned_agent_id}
+                agents={agents}
               />
-            </CardContent>
-          </Card>
+            ) : null}
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>SLA activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <AuditTimeline
-                entries={caseData.audit_history ?? []}
-                title="SLA activity"
-                eventFilter={[
-                  "sla_due_soon",
-                  "sla_breach",
-                  "sla_completed",
-                  "sla_paused",
-                  "sla_resumed",
-                ]}
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Status history</CardTitle>
-              <CardDescription>All recorded status changes</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <AuditTimeline
-                entries={caseData.audit_history ?? []}
-                eventFilter={["status_change", "acknowledge", "case_reopened"]}
-              />
-            </CardContent>
-          </Card>
+          <div className="ops-panel p-4">
+            <h2 className="mb-3 text-sm font-semibold">SLA</h2>
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">First response</span>
+                {firstResponse ? (
+                  <SlaStateBadge state={firstResponse.state} />
+                ) : (
+                  "—"
+                )}
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Resolution</span>
+                {resolution ? (
+                  <span className="font-medium">
+                    {resolution.state === "COMPLETED"
+                      ? "Met"
+                      : formatSlaRemaining(resolution.due_at)}
+                  </span>
+                ) : (
+                  "—"
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -343,39 +336,35 @@ export function CaseDetail({
 
 function SlaCard({ title, record }: { title: string; record?: CaseSla }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2 text-sm">
-        {record ? (
-          <>
+    <div className="ops-panel space-y-2 p-4 text-sm">
+      <h3 className="font-semibold">{title}</h3>
+      {record ? (
+        <>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">State</span>
+            <SlaStateBadge state={record.state} />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Due</span>
+            <span>{formatDateTime(record.due_at)}</span>
+          </div>
+          {record.completed_at && (
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">State</span>
-              <SlaStateBadge state={record.state} />
+              <span className="text-muted-foreground">Completed</span>
+              <span>{formatDateTime(record.completed_at)}</span>
             </div>
+          )}
+          {record.paused_at && (
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Due</span>
-              <span>{formatDateTime(record.due_at)}</span>
+              <span className="text-muted-foreground">Paused at</span>
+              <span>{formatDateTime(record.paused_at)}</span>
             </div>
-            {record.completed_at && (
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Completed</span>
-                <span>{formatDateTime(record.completed_at)}</span>
-              </div>
-            )}
-            {record.paused_at && (
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Paused at</span>
-                <span>{formatDateTime(record.paused_at)}</span>
-              </div>
-            )}
-          </>
-        ) : (
-          <p className="text-muted-foreground">No SLA record.</p>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </>
+      ) : (
+        <p className="text-muted-foreground">No SLA record.</p>
+      )}
+    </div>
   );
 }
 

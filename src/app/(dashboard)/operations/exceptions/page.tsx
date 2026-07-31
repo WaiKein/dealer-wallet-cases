@@ -73,7 +73,7 @@ export default async function OperationsExceptionsPage({
       <PageHeader
         eyebrow="Operations"
         title="Exceptions"
-        description="Triage failed integrations, SLA breaches, unassigned cases, and dead-letter jobs. Unknown financial results require status inquiry before retry."
+        description={`${data.length} open · triage failed integrations, SLA breaches, and dead-letter jobs`}
       />
 
       <ExceptionsWorkspace

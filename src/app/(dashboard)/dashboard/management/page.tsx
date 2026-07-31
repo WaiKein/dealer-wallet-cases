@@ -34,8 +34,8 @@ export default async function ManagementDashboardPage({
     <div className="space-y-6">
       <PageHeader
         eyebrow="Analytics"
-        title="Management dashboard"
-        description="Organisation-scoped pilot KPIs and breakdowns (server-side aggregation)."
+        title="Operations performance"
+        description="Throughput, service risk and workload trends."
         action={
           <Button asChild variant="outline">
             <Link href="/dashboard">Personal dashboard</Link>

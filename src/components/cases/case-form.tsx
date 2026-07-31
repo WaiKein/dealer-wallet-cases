@@ -26,7 +26,7 @@ interface CaseFormProps {
   subcategories: Subcategory[];
 }
 
-const STEPS = ["Request", "Classification", "Adjustment", "Review"] as const;
+const STEPS = ["Request", "Classify", "Adjustment", "Review"] as const;
 
 export function CaseForm({ categories, subcategories }: CaseFormProps) {
   const router = useRouter();
@@ -133,69 +133,73 @@ export function CaseForm({ categories, subcategories }: CaseFormProps) {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <PageHeader
-        title="New case"
-        description="Four-step intake. Values are kept as you move between steps. Nothing is saved until you submit."
+        title="Create case"
+        description="Values stay in this browser session as you move between steps. Nothing is saved until you submit."
       />
 
-      <ol className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <ol className="grid grid-cols-2 gap-2 border-b sm:grid-cols-4">
         {STEPS.map((label, index) => (
           <li
             key={label}
             className={cn(
-              "rounded-md border px-3 py-2 text-center text-xs font-medium",
+              "border-b-2 px-3 py-2 text-center text-xs font-medium",
               index === step
-                ? "border-primary bg-accent text-accent-foreground"
+                ? "border-primary text-primary"
                 : index < step
-                  ? "border-primary/40 text-foreground"
-                  : "text-muted-foreground"
+                  ? "border-transparent text-foreground"
+                  : "border-transparent text-muted-foreground"
             )}
           >
-            {index + 1}. {label}
+            {index + 1} {label}
           </li>
         ))}
       </ol>
 
-      <div className="ops-panel space-y-4 p-4 sm:p-6">
-        {formError && (
-          <Alert className="border-destructive/50 bg-destructive/10">
-            <AlertTitle>Unable to create case</AlertTitle>
-            <AlertDescription>{formError}</AlertDescription>
-          </Alert>
-        )}
+      <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
+        <div className="ops-panel space-y-4 p-4 sm:p-6">
+          {formError && (
+            <Alert className="border-destructive/50 bg-destructive/10">
+              <AlertTitle>Unable to create case</AlertTitle>
+              <AlertDescription>{formError}</AlertDescription>
+            </Alert>
+          )}
 
-        {step === 0 ? (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                disabled={isPending}
-              />
-              {fieldErrors.title && (
-                <p className="text-sm text-destructive">{fieldErrors.title}</p>
-              )}
+          {step === 0 ? (
+            <div className="space-y-4">
+              <h2 className="text-sm font-semibold">Request details</h2>
+              <div className="space-y-2">
+                <Label htmlFor="title">What happened?</Label>
+                <Input
+                  id="title"
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  disabled={isPending}
+                  placeholder="Short descriptive title"
+                />
+                {fieldErrors.title && (
+                  <p className="text-sm text-destructive">{fieldErrors.title}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  rows={4}
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  disabled={isPending}
+                  placeholder="Describe the issue, timing and expected outcome…"
+                />
+                {fieldErrors.description && (
+                  <p className="text-sm text-destructive">
+                    {fieldErrors.description}
+                  </p>
+                )}
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                rows={4}
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                disabled={isPending}
-              />
-              {fieldErrors.description && (
-                <p className="text-sm text-destructive">
-                  {fieldErrors.description}
-                </p>
-              )}
-            </div>
-          </div>
-        ) : null}
+          ) : null}
 
         {step === 1 ? (
           <div className="grid gap-4 sm:grid-cols-2">
@@ -408,7 +412,11 @@ export function CaseForm({ categories, subcategories }: CaseFormProps) {
           )}
           {step < STEPS.length - 1 ? (
             <Button type="button" onClick={goNext} disabled={isPending}>
-              Continue
+              {step === 0
+                ? "Continue to classification"
+                : step === 1
+                  ? "Continue to adjustment"
+                  : "Continue to review"}
             </Button>
           ) : (
             <Button type="button" onClick={handleSubmit} disabled={isPending}>
@@ -416,6 +424,28 @@ export function CaseForm({ categories, subcategories }: CaseFormProps) {
             </Button>
           )}
         </div>
+        </div>
+
+        <aside className="space-y-3">
+          <div className="rounded-md border border-l-4 border-l-primary bg-accent/40 p-4 text-sm">
+            <p className="font-medium">Why this step?</p>
+            <p className="mt-1 text-muted-foreground">
+              {step === 0
+                ? "Start with the facts. Financial fields appear only when the selected category requires them."
+                : step === 1
+                  ? "Classification drives routing, SLA and approval matching."
+                  : step === 2
+                    ? "Capture the financial adjustment accurately before review."
+                    : "Confirm every value. Submitting creates the case immediately — this is not a draft."}
+            </p>
+          </div>
+          <div className="ops-panel p-4 text-sm">
+            <p className="font-medium">Completion</p>
+            <p className="mt-1 text-muted-foreground">
+              Step {step + 1} of {STEPS.length}
+            </p>
+          </div>
+        </aside>
       </div>
     </div>
   );

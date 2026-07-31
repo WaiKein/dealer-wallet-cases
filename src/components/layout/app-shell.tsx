@@ -1,5 +1,6 @@
 import { NotificationBell } from "@/components/layout/notification-bell";
 import { AppSidebar, MobileBottomNav } from "@/components/layout/app-navigation";
+import { GlobalSearch } from "@/components/layout/global-search";
 import { signOut } from "@/lib/auth/actions";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 import { Button } from "@/components/ui/button";
@@ -33,19 +34,7 @@ export function AppShell({
               </span>
               <span className="text-sm font-semibold">CaseOps</span>
             </Link>
-            <div className="hidden min-w-0 flex-1 md:block">
-              <label className="sr-only" htmlFor="global-search">
-                Search cases or commands
-              </label>
-              <input
-                id="global-search"
-                type="search"
-                placeholder="Search cases or commands..."
-                className="h-9 w-full max-w-xl rounded-full border bg-background px-4 text-sm"
-                disabled
-                title="Global search arrives with the cases command toolbar"
-              />
-            </div>
+            <GlobalSearch />
             <div className="ml-auto flex items-center gap-2 sm:gap-3">
               <span className="hidden rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground sm:inline">
                 My organisation
@@ -71,7 +60,7 @@ export function AppShell({
         <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 pb-24 lg:px-6 lg:pb-8">
           {children}
         </main>
-        <MobileBottomNav role={profile.role} />
+        <MobileBottomNav role={profile.role} fullName={profile.full_name} />
       </div>
     </div>
   );

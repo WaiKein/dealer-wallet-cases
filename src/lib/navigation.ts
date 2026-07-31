@@ -4,7 +4,6 @@ import {
   canAccessAgentWorkspace,
   canAccessExceptionQueues,
   canAccessManagementDashboard,
-  canCreateCase,
 } from "@/lib/auth/permissions";
 import { isTestControlEnabled } from "@/lib/clock";
 import type { LucideIcon } from "lucide-react";
@@ -25,6 +24,7 @@ export type NavItem = {
   label: string;
   icon: LucideIcon;
   match?: "exact" | "prefix";
+  /** Shown in the fixed mobile bottom bar (max 4 + More). */
   mobilePrimary?: boolean;
 };
 
@@ -38,15 +38,6 @@ export function getPrimaryNavItems(role: UserRole): NavItem[] {
       mobilePrimary: true,
     },
   ];
-
-  if (canAccessManagementDashboard(role)) {
-    items.push({
-      href: "/dashboard/management",
-      label: "Analytics",
-      icon: LineChart,
-      match: "prefix",
-    });
-  }
 
   items.push({
     href: "/cases",
@@ -76,6 +67,15 @@ export function getPrimaryNavItems(role: UserRole): NavItem[] {
     });
   }
 
+  if (canAccessManagementDashboard(role)) {
+    items.push({
+      href: "/dashboard/management",
+      label: "Analytics",
+      icon: LineChart,
+      match: "prefix",
+    });
+  }
+
   if (canAccessAgentWorkspace(role)) {
     items.push({
       href: "/assignment-groups",
@@ -100,7 +100,6 @@ export function getPrimaryNavItems(role: UserRole): NavItem[] {
       label: "Admin",
       icon: Settings,
       match: "prefix",
-      mobilePrimary: true,
     });
   }
 
@@ -116,12 +115,25 @@ export function getPrimaryNavItems(role: UserRole): NavItem[] {
   return items;
 }
 
-export function getMobileNavItems(role: UserRole): NavItem[] {
-  const primary = getPrimaryNavItems(role).filter((item) => item.mobilePrimary);
-  if (canCreateCase(role) && !primary.some((item) => item.href === "/cases/new")) {
-    // New case stays reachable from Cases; keep five highest-use areas.
+/** Fixed bottom slots excluding More — prefer Overview | Cases | Workspace | Exceptions. */
+export function getMobilePrimaryItems(role: UserRole): NavItem[] {
+  const preferred = ["/dashboard", "/cases", "/workspace", "/operations/exceptions"];
+  const all = getPrimaryNavItems(role);
+  const primary = preferred
+    .map((href) => all.find((item) => item.href === href))
+    .filter((item): item is NavItem => Boolean(item));
+  if (primary.length >= 4) return primary.slice(0, 4);
+  // Fill remaining slots from other items if role lacks some preferred routes.
+  for (const item of all) {
+    if (primary.length >= 4) break;
+    if (!primary.some((p) => p.href === item.href)) primary.push(item);
   }
-  return primary.slice(0, 5);
+  return primary.slice(0, 4);
+}
+
+export function getMobileMoreItems(role: UserRole): NavItem[] {
+  const primaryHrefs = new Set(getMobilePrimaryItems(role).map((i) => i.href));
+  return getPrimaryNavItems(role).filter((item) => !primaryHrefs.has(item.href));
 }
 
 export function isNavActive(pathname: string, item: NavItem): boolean {

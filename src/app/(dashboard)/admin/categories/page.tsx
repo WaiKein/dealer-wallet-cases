@@ -5,7 +5,12 @@ import {
   EmptyState,
 } from "@/components/admin/admin-ui";
 import { AdminEditorPanel } from "@/components/admin/admin-editor-panel";
-import { PageHeader } from "@/components/layout/page-header";
+import { PageBreadcrumb, PageHeader } from "@/components/layout/page-header";
+import {
+  DataTable,
+  DataTableCell,
+  DataTableRow,
+} from "@/components/ui/data-table";
 import { adminUpsertCategoryAction } from "@/lib/admin/actions";
 import { listAdminCategories } from "@/lib/admin/config";
 import { requireAdmin } from "@/lib/auth/session";
@@ -19,7 +24,7 @@ const fields = [
 export default async function AdminCategoriesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; active?: string }>;
+  searchParams: Promise<{ q?: string; active?: string; edit?: string }>;
 }) {
   const profile = await requireAdmin();
   const params = await searchParams;
@@ -32,11 +37,19 @@ export default async function AdminCategoriesPage({
   }
 
   const activeCount = result.data.items.filter((item) => item.is_active).length;
+  const editing = params.edit
+    ? result.data.items.find((item) => item.id === params.edit)
+    : undefined;
 
   return (
     <div className="space-y-6">
+      <PageBreadcrumb
+        items={[
+          { href: "/admin", label: "Administration" },
+          { label: "Categories" },
+        ]}
+      />
       <PageHeader
-        eyebrow="Workflow configuration"
         title="Categories"
         description={`${result.data.items.length} values · ${activeCount} active`}
       />
@@ -52,39 +65,56 @@ export default async function AdminCategoriesPage({
       {result.data.items.length === 0 ? (
         <EmptyState message="No categories found." />
       ) : (
-        <div className="space-y-3">
+        <DataTable headers={["Code / name", "Status", "Version", "Updated"]}>
           {result.data.items.map((item) => (
-            <div key={item.id} className="ops-panel space-y-3 p-4">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="font-medium">
-                    {item.name}{" "}
-                    <span className="text-muted-foreground">({item.code})</span>
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    v{item.version ?? 1}
-                  </p>
-                </div>
+            <DataTableRow key={item.id}>
+              <DataTableCell primary>
+                <a
+                  href={`/admin/categories?edit=${item.id}${
+                    params.q ? `&q=${encodeURIComponent(params.q)}` : ""
+                  }${params.active ? `&active=${params.active}` : ""}`}
+                  className="hover:underline"
+                >
+                  {item.code}
+                  <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                    {item.name}
+                  </span>
+                </a>
+              </DataTableCell>
+              <DataTableCell>
                 <ActiveBadge active={item.is_active} />
-              </div>
-              <details className="rounded-md border bg-muted/20 p-3">
-                <summary className="cursor-pointer text-sm font-medium">
-                  Edit {item.name}
-                </summary>
-                <div className="mt-3">
-                  <AdminUpsertForm
-                    title={`Edit ${item.name}`}
-                    initial={item as unknown as Record<string, unknown>}
-                    fields={fields}
-                    action={adminUpsertCategoryAction}
-                    submitLabel="Save category"
-                  />
-                </div>
-              </details>
-            </div>
+              </DataTableCell>
+              <DataTableCell>v{item.version ?? 1}</DataTableCell>
+              <DataTableCell>
+                {item.updated_at
+                  ? new Date(item.updated_at).toLocaleDateString()
+                  : "—"}
+              </DataTableCell>
+            </DataTableRow>
           ))}
-        </div>
+        </DataTable>
       )}
+
+      {editing ? (
+        <div className="ops-panel space-y-3 p-4">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold">Edit {editing.name}</h2>
+            <a
+              href="/admin/categories"
+              className="text-sm text-muted-foreground hover:underline"
+            >
+              Close
+            </a>
+          </div>
+          <AdminUpsertForm
+            title={`Edit ${editing.name}`}
+            initial={editing as unknown as Record<string, unknown>}
+            fields={fields}
+            action={adminUpsertCategoryAction}
+            submitLabel="Save category"
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

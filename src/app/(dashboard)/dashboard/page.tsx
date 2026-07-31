@@ -34,7 +34,7 @@ export default async function DashboardPage() {
   const atRisk =
     (data.byStatus.WAITING_FOR_REQUESTER ?? 0) +
     (data.byStatus.WAITING_FOR_EXTERNAL_PARTY ?? 0);
-  const resolved = data.byStatus.RESOLVED ?? 0;
+  const resolvedToday = data.resolvedToday ?? 0;
   const recentRows = (recent.data ?? []).slice(0, 6);
 
   const hour = new Date().getHours();
@@ -78,10 +78,21 @@ export default async function DashboardPage() {
           value={pendingApproval}
           href="/cases?status=PENDING_APPROVAL"
         />
-        <Metric label="Resolved" value={resolved} href="/cases?status=RESOLVED" />
+        <Metric label="Resolved today" value={resolvedToday} href="/cases?status=RESOLVED" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
+        <section className="ops-panel p-4">
+          <h2 className="mb-3 text-sm font-semibold">Queue trend · 7 days</h2>
+          <p className="text-sm text-muted-foreground">
+            Trend charting lands with management time-series. Use Analytics for
+            submitted-versus-resolved history in the selected range.
+          </p>
+          <Button asChild variant="outline" size="sm" className="mt-3">
+            <Link href="/dashboard/management">Open analytics</Link>
+          </Button>
+        </section>
+
         <section className="ops-panel p-4">
           <h2 className="mb-3 text-sm font-semibold">Needs attention</h2>
           {data.myOpen === 0 && atRisk === 0 && pendingApproval === 0 ? (
@@ -116,25 +127,6 @@ export default async function DashboardPage() {
               ) : null}
             </ul>
           )}
-        </section>
-
-        <section className="ops-panel p-4">
-          <h2 className="mb-3 text-sm font-semibold">Status mix</h2>
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            {Object.entries(data.byStatus)
-              .filter(([, value]) => value > 0)
-              .slice(0, 6)
-              .map(([status, value]) => (
-                <Link
-                  key={status}
-                  href={`/cases?status=${status}`}
-                  className="flex items-center justify-between rounded-md border px-3 py-2 hover:bg-muted/40"
-                >
-                  <CaseStatusBadge status={status as never} />
-                  <span className="font-semibold">{value}</span>
-                </Link>
-              ))}
-          </div>
         </section>
       </div>
 
