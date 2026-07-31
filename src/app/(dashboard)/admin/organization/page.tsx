@@ -2,6 +2,7 @@ import {
   AdminUpsertForm,
   ConfigHistoryPanel,
 } from "@/components/admin/admin-ui";
+import { PageHeader } from "@/components/layout/page-header";
 import { adminUpdateOrganizationAction } from "@/lib/admin/actions";
 import {
   getAdminOrganization,
@@ -20,25 +21,32 @@ export default async function AdminOrganizationPage() {
 
   return (
     <div className="space-y-6">
-      <AdminUpsertForm
-        title="Edit organisation"
-        initial={org as unknown as Record<string, unknown>}
-        fields={[
-          { name: "name", label: "Name", type: "text" },
-          {
-            name: "lead_authorization_mode",
-            label: "Lead authorization mode",
-            type: "select",
-            options: [
-              { value: "role", label: "Role" },
-              { value: "membership", label: "Membership" },
-              { value: "both", label: "Both" },
-            ],
-          },
-          { name: "is_active", label: "Active", type: "checkbox" },
-        ]}
-        action={adminUpdateOrganizationAction}
+      <PageHeader
+        eyebrow="Organisation"
+        title="Organisation settings"
+        description="Tenant identity and lead authorization mode"
       />
+      <div className="ops-panel p-4">
+        <AdminUpsertForm
+          title="Edit organisation"
+          initial={org as unknown as Record<string, unknown>}
+          fields={[
+            { name: "name", label: "Name", type: "text" },
+            {
+              name: "lead_authorization_mode",
+              label: "Lead authorization mode",
+              type: "select",
+              options: [
+                { value: "role", label: "Role" },
+                { value: "membership", label: "Membership" },
+                { value: "both", label: "Both" },
+              ],
+            },
+            { name: "is_active", label: "Active", type: "checkbox" },
+          ]}
+          action={adminUpdateOrganizationAction}
+        />
+      </div>
       <ConfigHistoryPanel entries={history.data?.items ?? []} />
     </div>
   );

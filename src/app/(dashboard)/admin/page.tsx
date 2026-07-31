@@ -1,84 +1,139 @@
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/layout/page-header";
+import { Input } from "@/components/ui/input";
 
-const MODULES = [
+const GROUPS = [
   {
-    href: "/admin/organization",
-    title: "Organisation",
-    body: "Name, lead authorization mode, active status.",
+    title: "People & access",
+    items: [
+      { href: "/admin/users", title: "Users", body: "Accounts and status" },
+      { href: "/admin/roles", title: "Roles", body: "Permissions catalogue" },
+      { href: "/admin/teams", title: "Teams", body: "Membership and routing" },
+      {
+        href: "/admin/team-memberships",
+        title: "Memberships",
+        body: "Members and lead flags",
+      },
+      {
+        href: "/admin/organization",
+        title: "Organisation",
+        body: "Name and lead mode",
+      },
+    ],
   },
   {
-    href: "/admin/users",
-    title: "Users",
-    body: "Profiles, roles, and active flags within your organisation.",
+    title: "Workflow configuration",
+    items: [
+      {
+        href: "/admin/categories",
+        title: "Classification",
+        body: "Categories and taxonomy",
+      },
+      {
+        href: "/admin/subcategories",
+        title: "Subcategories",
+        body: "Category children",
+      },
+      {
+        href: "/admin/assignment-rules",
+        title: "Routing",
+        body: "Assignment rules",
+      },
+      {
+        href: "/admin/sla-definitions",
+        title: "Service policy",
+        body: "SLA definitions",
+      },
+      {
+        href: "/admin/approval-rules",
+        title: "Approval rules",
+        body: "Levels and limits",
+      },
+    ],
   },
   {
-    href: "/admin/roles",
-    title: "Application roles",
-    body: "Catalogue of system roles (enum-backed).",
-  },
-  {
-    href: "/admin/teams",
-    title: "Teams",
-    body: "Assignment groups used for routing and ownership.",
-  },
-  {
-    href: "/admin/team-memberships",
-    title: "Team memberships",
-    body: "Members and lead flags per team.",
-  },
-  {
-    href: "/admin/categories",
-    title: "Categories",
-    body: "Case taxonomy categories.",
-  },
-  {
-    href: "/admin/subcategories",
-    title: "Subcategories",
-    body: "Case taxonomy subcategories.",
-  },
-  {
-    href: "/admin/assignment-rules",
-    title: "Assignment rules",
-    body: "Sequence-based routing to teams.",
-  },
-  {
-    href: "/admin/sla-definitions",
-    title: "SLA definitions",
-    body: "First-response and resolution durations by priority.",
-  },
-  {
-    href: "/admin/approval-rules",
-    title: "Approval rules",
-    body: "Configurable approval matrix (matching in Phase 2).",
-  },
-  {
-    href: "/admin/notification-templates",
-    title: "Notification templates",
-    body: "Organisation-scoped message templates.",
-  },
-  {
-    href: "/admin/feature-flags",
-    title: "Feature flags",
-    body: "Pilot toggles such as execution-before-resolve.",
+    title: "Communication & control",
+    items: [
+      {
+        href: "/admin/notification-templates",
+        title: "Templates",
+        body: "Notifications",
+      },
+      {
+        href: "/admin/delegations",
+        title: "Delegations",
+        body: "Temporary coverage",
+      },
+      {
+        href: "/admin/feature-flags",
+        title: "Feature flags",
+        body: "Controlled rollout",
+      },
+    ],
   },
 ] as const;
 
-export default function AdminHomePage() {
+export default async function AdminOverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const params = await searchParams;
+  const q = (params.q ?? "").trim().toLowerCase();
+
+  const groups = GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter(
+      (item) =>
+        !q ||
+        item.title.toLowerCase().includes(q) ||
+        item.body.toLowerCase().includes(q)
+    ),
+  })).filter((group) => group.items.length > 0);
+
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      {MODULES.map((mod) => (
-        <Link key={mod.href} href={mod.href}>
-          <Card className="h-full transition hover:border-foreground/30">
-            <CardHeader>
-              <CardTitle className="text-base">{mod.title}</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              {mod.body}
-            </CardContent>
-          </Card>
-        </Link>
-      ))}
+    <div className="space-y-6">
+      <PageHeader
+        title="Administration"
+        description="Searchable settings directory. Changes are versioned and audited."
+      />
+
+      <form method="get" className="ops-panel p-3">
+        <label className="sr-only" htmlFor="admin-settings-search">
+          Find a setting
+        </label>
+        <Input
+          id="admin-settings-search"
+          name="q"
+          defaultValue={params.q ?? ""}
+          placeholder="Find a setting, user, rule or template..."
+        />
+      </form>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {groups.map((group) => (
+          <section key={group.title} className="space-y-3">
+            <h2 className="text-sm font-semibold">{group.title}</h2>
+            <ul className="ops-panel divide-y overflow-hidden">
+              {group.items.map((item) => (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className="block px-4 py-3 transition-colors hover:bg-muted/40"
+                  >
+                    <p className="font-medium">{item.title}</p>
+                    <p className="text-xs text-muted-foreground">{item.body}</p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+
+      {groups.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No settings matched.</p>
+      ) : null}
     </div>
   );
 }

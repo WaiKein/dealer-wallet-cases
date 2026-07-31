@@ -3,10 +3,37 @@ import {
   AdminUpsertForm,
   EmptyState,
 } from "@/components/admin/admin-ui";
+import { AdminEditorPanel } from "@/components/admin/admin-editor-panel";
+import { PageHeader } from "@/components/layout/page-header";
+import { Badge } from "@/components/ui/badge";
 import { upsertApprovalDelegationAction } from "@/lib/approvals/actions";
 import { requireProfile } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+
+type DelegationBucket = "active" | "upcoming" | "expired";
+
+function bucketFor(
+  item: {
+    is_active: boolean;
+    effective_from?: string | null;
+    effective_to?: string | null;
+  },
+  now: Date
+): DelegationBucket {
+  const from = item.effective_from ? new Date(item.effective_from) : null;
+  const to = item.effective_to ? new Date(item.effective_to) : null;
+  if (to && to.getTime() < now.getTime()) return "expired";
+  if (from && from.getTime() > now.getTime()) return "upcoming";
+  if (!item.is_active) return "expired";
+  return "active";
+}
+
+const BUCKET_LABELS: Record<DelegationBucket, string> = {
+  active: "Active",
+  upcoming: "Upcoming",
+  expired: "Expired",
+};
 
 export default async function DelegationsPage() {
   const profile = await requireProfile();
@@ -43,7 +70,6 @@ export default async function DelegationsPage() {
   const usersById = new Map(
     (orgUsers ?? []).map((user) => [user.id, user] as const)
   );
-  // Include current user for label resolution when they appear as delegator/delegate.
   usersById.set(profile.id, {
     id: profile.id,
     full_name: profile.full_name,
@@ -75,47 +101,105 @@ export default async function DelegationsPage() {
     return user ? `${user.full_name}` : id.slice(0, 8);
   }
 
+  const now = new Date();
+  const buckets: Record<DelegationBucket, typeof items> = {
+    active: [],
+    upcoming: [],
+    expired: [],
+  };
+  for (const item of items ?? []) {
+    buckets[bucketFor(item, now)].push(item);
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Approval delegations</h1>
-        <p className="text-sm text-muted-foreground">
-          Time-bounded approval delegation. Limits cannot exceed your authority.
-        </p>
-      </div>
-      <AdminUpsertForm
-        title="Create delegation"
-        fields={fields}
-        action={upsertApprovalDelegationAction}
-        submitLabel="Create delegation"
+      <PageHeader
+        eyebrow="Approvals"
+        title="Delegations"
+        description="Time-bounded approval delegation. Limits cannot exceed your authority."
       />
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        {(Object.keys(BUCKET_LABELS) as DelegationBucket[]).map((key) => (
+          <div key={key} className="ops-panel p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {BUCKET_LABELS[key]}
+            </p>
+            <p className="mt-2 text-3xl font-semibold">
+              {buckets[key].length}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <AdminEditorPanel title="Create delegation" triggerLabel="New delegation">
+        <AdminUpsertForm
+          title="Create delegation"
+          fields={fields}
+          action={upsertApprovalDelegationAction}
+          submitLabel="Create delegation"
+        />
+      </AdminEditorPanel>
+
       {(items ?? []).length === 0 ? (
         <EmptyState message="No delegations found." />
       ) : (
-        (items ?? []).map((item) => (
-          <div key={item.id} className="space-y-3 rounded-lg border p-4">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <p className="font-medium text-sm">
-                  {userLabel(item.delegator_id)} → {userLabel(item.delegate_id)}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  limit {item.approval_limit ?? "unlimited"} · v{item.version}
-                </p>
+        (Object.keys(BUCKET_LABELS) as DelegationBucket[]).map((key) =>
+          buckets[key].length === 0 ? null : (
+            <section key={key} className="space-y-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                {BUCKET_LABELS[key]}
+              </h2>
+              <div className="space-y-3">
+                {buckets[key].map((item) => (
+                  <div key={item.id} className="ops-panel space-y-3 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-medium">
+                          {userLabel(item.delegator_id)} →{" "}
+                          {userLabel(item.delegate_id)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          limit {item.approval_limit ?? "unlimited"} · v
+                          {item.version}
+                          {item.effective_from
+                            ? ` · from ${new Date(item.effective_from).toLocaleDateString()}`
+                            : ""}
+                          {item.effective_to
+                            ? ` · to ${new Date(item.effective_to).toLocaleDateString()}`
+                            : ""}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{BUCKET_LABELS[key]}</Badge>
+                        <ActiveBadge active={item.is_active} />
+                      </div>
+                    </div>
+                    {(profile.role === "admin" ||
+                      item.delegator_id === profile.id) && (
+                      <details className="rounded-md border bg-muted/20 p-3">
+                        <summary className="cursor-pointer text-sm font-medium">
+                          Edit delegation
+                        </summary>
+                        <div className="mt-3">
+                          <AdminUpsertForm
+                            title={`Edit delegation · ${userLabel(item.delegate_id)}`}
+                            initial={
+                              item as unknown as Record<string, unknown>
+                            }
+                            fields={fields}
+                            action={upsertApprovalDelegationAction}
+                            submitLabel="Save delegation"
+                          />
+                        </div>
+                      </details>
+                    )}
+                  </div>
+                ))}
               </div>
-              <ActiveBadge active={item.is_active} />
-            </div>
-            {(profile.role === "admin" || item.delegator_id === profile.id) && (
-              <AdminUpsertForm
-                title={`Edit delegation · ${userLabel(item.delegate_id)}`}
-                initial={item as unknown as Record<string, unknown>}
-                fields={fields}
-                action={upsertApprovalDelegationAction}
-                submitLabel="Save delegation"
-              />
-            )}
-          </div>
-        ))
+            </section>
+          )
+        )
       )}
     </div>
   );

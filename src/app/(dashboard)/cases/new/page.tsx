@@ -23,11 +23,9 @@ export default async function NewCasePage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <CaseForm
-        categories={categories.data}
-        subcategories={subcategories.data}
-      />
-    </div>
+    <CaseForm
+      categories={categories.data}
+      subcategories={subcategories.data}
+    />
   );
 }

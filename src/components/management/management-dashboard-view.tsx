@@ -1,11 +1,4 @@
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   AGEING_BAND_LABELS,
   type ManagementDashboardSnapshot,
   type NamedCount,
@@ -30,13 +23,13 @@ function Kpi({
   hint?: string;
 }) {
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardDescription>{title}</CardDescription>
-        <CardTitle className="text-2xl">{value}</CardTitle>
-        {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
-      </CardHeader>
-    </Card>
+    <div className="ops-panel p-4">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {title}
+      </p>
+      <p className="mt-2 text-2xl font-semibold">{value}</p>
+      {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
+    </div>
   );
 }
 
@@ -49,11 +42,9 @@ function ObjectBreakdown({
 }) {
   const entries = Object.entries(data).sort((a, b) => b[1] - a[1]);
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
+    <div className="ops-panel p-4">
+      <h3 className="text-sm font-semibold">{title}</h3>
+      <div className="mt-3 space-y-2">
         {entries.length === 0 ? (
           <p className="text-sm text-muted-foreground">No data</p>
         ) : (
@@ -67,18 +58,16 @@ function ObjectBreakdown({
             </div>
           ))
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
 function NamedBreakdown({ title, rows }: { title: string; rows: NamedCount[] }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
+    <div className="ops-panel p-4">
+      <h3 className="text-sm font-semibold">{title}</h3>
+      <div className="mt-3 space-y-2">
         {rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">No data</p>
         ) : (
@@ -92,8 +81,8 @@ function NamedBreakdown({ title, rows }: { title: string; rows: NamedCount[] }) 
             </div>
           ))
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -193,14 +182,12 @@ export function ManagementDashboardView({
         />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Daily created vs resolved</CardTitle>
-          <CardDescription>
-            Bounded to the selected date range (max 366 days).
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      <div className="ops-panel p-4">
+        <h3 className="text-sm font-semibold">Daily created vs resolved</h3>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Bounded to the selected date range (max 366 days).
+        </p>
+        <div className="mt-4 space-y-3">
           {breakdowns.dailyCreatedVsResolved.length === 0 ? (
             <p className="text-sm text-muted-foreground">No trend data</p>
           ) : (
@@ -233,8 +220,8 @@ export function ManagementDashboardView({
               </div>
             ))
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

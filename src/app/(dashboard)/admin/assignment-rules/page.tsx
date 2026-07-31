@@ -4,6 +4,8 @@ import {
   AdminUpsertForm,
   EmptyState,
 } from "@/components/admin/admin-ui";
+import { AdminEditorPanel } from "@/components/admin/admin-editor-panel";
+import { PageHeader } from "@/components/layout/page-header";
 import { adminUpsertAssignmentRuleAction } from "@/lib/admin/actions";
 import {
   listAdminAssignmentRules,
@@ -80,36 +82,53 @@ export default async function AdminAssignmentRulesPage({
 
   return (
     <div className="space-y-6">
-      <AdminFilterBar active={params.active} />
-      <AdminUpsertForm
-        title="Create assignment rule"
-        fields={fields}
-        action={adminUpsertAssignmentRuleAction}
-        submitLabel="Create rule"
+      <PageHeader
+        eyebrow="Workflow configuration"
+        title="Assignment rules"
+        description={`${result.data.items.length} rules · list first, edit on demand`}
       />
+      <AdminFilterBar active={params.active} />
+      <AdminEditorPanel title="Create assignment rule" triggerLabel="New rule">
+        <AdminUpsertForm
+          title="Create assignment rule"
+          fields={fields}
+          action={adminUpsertAssignmentRuleAction}
+          submitLabel="Create rule"
+        />
+      </AdminEditorPanel>
       {result.data.items.length === 0 ? (
         <EmptyState message="No assignment rules found." />
       ) : (
-        result.data.items.map((item) => (
-          <div key={item.id} className="space-y-3 rounded-lg border p-4">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <p className="font-medium">Sequence {item.sequence}</p>
-                <p className="text-sm text-muted-foreground">
-                  Team {item.assignment_group_id.slice(0, 8)} · v{item.version ?? 1}
-                </p>
+        <div className="space-y-3">
+          {result.data.items.map((item) => (
+            <div key={item.id} className="ops-panel space-y-3 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="font-medium">Sequence {item.sequence}</p>
+                  <p className="text-sm text-muted-foreground">
+                    Team {item.assignment_group_id.slice(0, 8)} · v
+                    {item.version ?? 1}
+                  </p>
+                </div>
+                <ActiveBadge active={item.is_active} />
               </div>
-              <ActiveBadge active={item.is_active} />
+              <details className="rounded-md border bg-muted/20 p-3">
+                <summary className="cursor-pointer text-sm font-medium">
+                  Edit rule · sequence {item.sequence}
+                </summary>
+                <div className="mt-3">
+                  <AdminUpsertForm
+                    title={`Edit rule · sequence ${item.sequence}`}
+                    initial={item as unknown as Record<string, unknown>}
+                    fields={fields}
+                    action={adminUpsertAssignmentRuleAction}
+                    submitLabel="Save rule"
+                  />
+                </div>
+              </details>
             </div>
-            <AdminUpsertForm
-              title={`Edit rule · sequence ${item.sequence}`}
-              initial={item as unknown as Record<string, unknown>}
-              fields={fields}
-              action={adminUpsertAssignmentRuleAction}
-              submitLabel="Save rule"
-            />
-          </div>
-        ))
+          ))}
+        </div>
       )}
     </div>
   );

@@ -1,17 +1,26 @@
-import { AppHeader } from "@/components/layout/app-header";
+import { AppShell } from "@/components/layout/app-shell";
 import { requireProfile } from "@/lib/auth/session";
+import {
+  countUnreadNotifications,
+  listNotificationsForUser,
+} from "@/lib/notifications/service";
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  await requireProfile();
+  const profile = await requireProfile();
+  const unread = await countUnreadNotifications(profile.id);
+  const notifications = await listNotificationsForUser(profile.id, 15);
 
   return (
-    <div className="min-h-screen bg-muted/20">
-      <AppHeader />
-      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
-    </div>
+    <AppShell
+      profile={profile}
+      unreadCount={unread.count}
+      notifications={notifications.data}
+    >
+      {children}
+    </AppShell>
   );
 }

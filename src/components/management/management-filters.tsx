@@ -20,7 +20,7 @@ export function ManagementFilters() {
 
   return (
     <form
-      className="flex flex-col gap-3 rounded-lg border bg-card p-4 md:flex-row md:items-end"
+      className="flex w-full flex-col gap-3 md:flex-row md:items-end"
       onSubmit={(event) => {
         event.preventDefault();
         const form = new FormData(event.currentTarget);

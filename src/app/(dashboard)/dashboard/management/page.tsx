@@ -3,8 +3,10 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { ManagementDashboardView } from "@/components/management/management-dashboard-view";
 import { ManagementFilters } from "@/components/management/management-filters";
+import { PageHeader } from "@/components/layout/page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { CommandToolbar } from "@/components/ui/command-toolbar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { canAccessManagementDashboard } from "@/lib/auth/permissions";
 import { requireProfile } from "@/lib/auth/session";
@@ -30,22 +32,22 @@ export default async function ManagementDashboardPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Management dashboard</h1>
-          <p className="text-muted-foreground">
-            Organisation-scoped pilot KPIs and breakdowns (server-side
-            aggregation).
-          </p>
-        </div>
-        <Button asChild variant="outline">
-          <Link href="/dashboard">Personal dashboard</Link>
-        </Button>
-      </div>
+      <PageHeader
+        eyebrow="Analytics"
+        title="Management dashboard"
+        description="Organisation-scoped pilot KPIs and breakdowns (server-side aggregation)."
+        action={
+          <Button asChild variant="outline">
+            <Link href="/dashboard">Personal dashboard</Link>
+          </Button>
+        }
+      />
 
-      <Suspense fallback={<Skeleton className="h-24 w-full rounded-lg" />}>
-        <ManagementFilters />
-      </Suspense>
+      <CommandToolbar>
+        <Suspense fallback={<Skeleton className="h-10 w-full rounded-md" />}>
+          <ManagementFilters />
+        </Suspense>
+      </CommandToolbar>
 
       {error || !data ? (
         <Alert className="border-destructive/50 bg-destructive/10">

@@ -4,8 +4,14 @@ import {
   AdminUpsertForm,
   EmptyState,
 } from "@/components/admin/admin-ui";
+import { AdminEditorPanel } from "@/components/admin/admin-editor-panel";
+import { PageHeader } from "@/components/layout/page-header";
 import { adminUpsertTeamMembershipAction } from "@/lib/admin/actions";
-import { listAdminProfiles, listAdminTeamMemberships, listAdminTeams } from "@/lib/admin/config";
+import {
+  listAdminProfiles,
+  listAdminTeamMemberships,
+  listAdminTeams,
+} from "@/lib/admin/config";
 import { requireAdmin } from "@/lib/auth/session";
 
 export default async function AdminTeamMembershipsPage({
@@ -47,37 +53,55 @@ export default async function AdminTeamMembershipsPage({
 
   return (
     <div className="space-y-6">
-      <AdminFilterBar q={params.q} active={params.active} />
-      <AdminUpsertForm
-        title="Add membership"
-        fields={fields}
-        action={adminUpsertTeamMembershipAction}
-        submitLabel="Add member"
+      <PageHeader
+        eyebrow="People & access"
+        title="Team memberships"
+        description={`${memberships.data.items.length} memberships · leads and agents`}
       />
+      <AdminFilterBar q={params.q} active={params.active} />
+      <AdminEditorPanel title="Add membership" triggerLabel="Add member">
+        <AdminUpsertForm
+          title="Add membership"
+          fields={fields}
+          action={adminUpsertTeamMembershipAction}
+          submitLabel="Add member"
+        />
+      </AdminEditorPanel>
       {memberships.data.items.length === 0 ? (
         <EmptyState message="No memberships found." />
       ) : (
-        memberships.data.items.map((row) => (
-          <div key={row.id} className="space-y-3 rounded-lg border p-4">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <p className="font-medium">
-                  {row.profile?.full_name ?? row.user_id}{" "}
-                  {row.is_lead ? "(lead)" : ""}
-                </p>
-                <p className="text-sm text-muted-foreground">{row.profile?.email}</p>
+        <div className="space-y-3">
+          {memberships.data.items.map((row) => (
+            <div key={row.id} className="ops-panel space-y-3 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="font-medium">
+                    {row.profile?.full_name ?? row.user_id}{" "}
+                    {row.is_lead ? "(lead)" : ""}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {row.profile?.email}
+                  </p>
+                </div>
+                <ActiveBadge active={row.is_active !== false} />
               </div>
-              <ActiveBadge active={row.is_active !== false} />
+              <details className="rounded-md border bg-muted/20 p-3">
+                <summary className="cursor-pointer text-sm font-medium">
+                  Edit membership
+                </summary>
+                <div className="mt-3">
+                  <AdminUpsertForm
+                    title={`Edit membership · ${row.profile?.full_name ?? row.user_id}`}
+                    initial={row as unknown as Record<string, unknown>}
+                    fields={fields}
+                    action={adminUpsertTeamMembershipAction}
+                    submitLabel="Save membership"
+                  />
+                </div>
+              </details>
             </div>
-            <AdminUpsertForm
-              title={`Edit membership · ${row.profile?.full_name ?? row.user_id}`}
-              initial={row as unknown as Record<string, unknown>}
-              fields={fields}
-              action={adminUpsertTeamMembershipAction}
-              submitLabel="Save membership"
-            />
-          </div>
-        ))
+          ))}
+        </div>
       )}
     </div>
   );

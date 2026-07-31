@@ -4,6 +4,8 @@ import {
   AdminUpsertForm,
   EmptyState,
 } from "@/components/admin/admin-ui";
+import { AdminEditorPanel } from "@/components/admin/admin-editor-panel";
+import { PageHeader } from "@/components/layout/page-header";
 import { adminUpsertApprovalRuleAction } from "@/lib/admin/actions";
 import { listAdminApprovalRules } from "@/lib/admin/config";
 import { ROLE_LABELS } from "@/lib/auth/roles";
@@ -53,44 +55,60 @@ export default async function AdminApprovalRulesPage({
 
   return (
     <div className="space-y-6">
+      <PageHeader
+        eyebrow="Workflow configuration"
+        title="Approval rules"
+        description={`${result.data.items.length} rules · maker-checker thresholds`}
+      />
       <p className="text-sm text-muted-foreground">
         Approval rules are managed here. Runtime matching and maker-checker
         enforcement arrive in Phase 2.
       </p>
       <AdminFilterBar q={params.q} active={params.active} />
-      <AdminUpsertForm
-        title="Create approval rule"
-        fields={fields}
-        action={adminUpsertApprovalRuleAction}
-        submitLabel="Create approval rule"
-      />
+      <AdminEditorPanel title="Create approval rule" triggerLabel="New rule">
+        <AdminUpsertForm
+          title="Create approval rule"
+          fields={fields}
+          action={adminUpsertApprovalRuleAction}
+          submitLabel="Create approval rule"
+        />
+      </AdminEditorPanel>
       {result.data.items.length === 0 ? (
         <EmptyState message="No approval rules found." />
       ) : (
-        result.data.items.map((item) => (
-          <div key={item.id} className="space-y-3 rounded-lg border p-4">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <p className="font-medium">
-                  {item.name}{" "}
-                  <span className="text-muted-foreground">({item.code})</span>
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  seq {item.sequence} · levels {item.approval_levels} · v
-                  {item.version}
-                </p>
+        <div className="space-y-3">
+          {result.data.items.map((item) => (
+            <div key={item.id} className="ops-panel space-y-3 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="font-medium">
+                    {item.name}{" "}
+                    <span className="text-muted-foreground">({item.code})</span>
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    seq {item.sequence} · levels {item.approval_levels} · v
+                    {item.version}
+                  </p>
+                </div>
+                <ActiveBadge active={item.is_active} />
               </div>
-              <ActiveBadge active={item.is_active} />
+              <details className="rounded-md border bg-muted/20 p-3">
+                <summary className="cursor-pointer text-sm font-medium">
+                  Edit {item.name}
+                </summary>
+                <div className="mt-3">
+                  <AdminUpsertForm
+                    title={`Edit ${item.name}`}
+                    initial={item as unknown as Record<string, unknown>}
+                    fields={fields}
+                    action={adminUpsertApprovalRuleAction}
+                    submitLabel="Save approval rule"
+                  />
+                </div>
+              </details>
             </div>
-            <AdminUpsertForm
-              title={`Edit ${item.name}`}
-              initial={item as unknown as Record<string, unknown>}
-              fields={fields}
-              action={adminUpsertApprovalRuleAction}
-              submitLabel="Save approval rule"
-            />
-          </div>
-        ))
+          ))}
+        </div>
       )}
     </div>
   );

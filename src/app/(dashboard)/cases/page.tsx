@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import { CaseFilters } from "@/components/cases/case-filters";
 import { CaseList } from "@/components/cases/case-list";
 import { SavedViewsToolbar } from "@/components/cases/saved-views-toolbar";
+import { PageHeader } from "@/components/layout/page-header";
+import { CommandToolbar } from "@/components/ui/command-toolbar";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -42,35 +44,42 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
     listSavedCaseViews(profile),
   ]);
 
+  const openCount = cases?.length ?? 0;
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Cases</h1>
-          <p className="text-muted-foreground">
-            Track requests through the case workflow.
-            {view ? (
-              <>
-                {" "}
-                Active view: <span className="font-medium text-foreground">{view.name}</span>
-              </>
-            ) : null}
-          </p>
-        </div>
-        {canCreateCase(profile.role) && (
-          <Button asChild>
-            <Link href="/cases/new">New case</Link>
-          </Button>
-        )}
+    <div className="space-y-4">
+      <PageHeader
+        title="Cases"
+        description={
+          view
+            ? `${openCount} in view · Active view: ${view.name}`
+            : `${openCount} matching · Track requests through the workflow.`
+        }
+        action={
+          canCreateCase(profile.role) ? (
+            <Button asChild>
+              <Link href="/cases/new">New case</Link>
+            </Button>
+          ) : undefined
+        }
+      />
+
+      <div className="flex flex-wrap gap-2">
+        <QuickView href="/cases" label="All" />
+        <QuickView href="/cases?status=PENDING_APPROVAL" label="Pending approval" />
+        <QuickView href="/workspace?queue=breached" label="SLA at risk" />
       </div>
 
-      <Suspense fallback={<FiltersFallback />}>
-        <SavedViewsToolbar views={views} />
-      </Suspense>
-
-      <Suspense fallback={<FiltersFallback />}>
-        <CaseFilters />
-      </Suspense>
+      <CommandToolbar>
+        <div className="min-w-0 flex-1 space-y-3">
+          <Suspense fallback={<FiltersFallback />}>
+            <SavedViewsToolbar views={views} />
+          </Suspense>
+          <Suspense fallback={<FiltersFallback />}>
+            <CaseFilters />
+          </Suspense>
+        </div>
+      </CommandToolbar>
 
       {error ? (
         <Alert className="border-destructive/50 bg-destructive/10">
@@ -81,5 +90,16 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
         <CaseList cases={cases} />
       )}
     </div>
+  );
+}
+
+function QuickView({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="rounded-full border px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+    >
+      {label}
+    </Link>
   );
 }

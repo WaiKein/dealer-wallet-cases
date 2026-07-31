@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 export function ActiveBadge({ active }: { active?: boolean }) {
   return (
-    <Badge variant={active === false ? "outline" : "default"}>
+    <Badge variant={active === false ? "outline" : "success"}>
       {active === false ? "Inactive" : "Active"}
     </Badge>
   );

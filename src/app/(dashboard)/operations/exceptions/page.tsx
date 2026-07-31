@@ -1,4 +1,5 @@
 import { ExceptionsWorkspace } from "@/components/operations/exceptions-workspace";
+import { PageHeader } from "@/components/layout/page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   canAccessExceptionQueues,
@@ -69,14 +70,11 @@ export default async function OperationsExceptionsPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Operations exceptions</h1>
-        <p className="text-muted-foreground">
-          Triage failed integrations, SLA breaches, unassigned cases, and
-          dead-letter jobs. Unknown financial results require status inquiry
-          before retry.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Operations"
+        title="Exceptions"
+        description="Triage failed integrations, SLA breaches, unassigned cases, and dead-letter jobs. Unknown financial results require status inquiry before retry."
+      />
 
       <ExceptionsWorkspace
         rows={data}

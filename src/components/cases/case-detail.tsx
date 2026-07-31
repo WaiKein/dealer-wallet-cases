@@ -9,6 +9,8 @@ import { ExecutionPanel } from "@/components/cases/execution-panel";
 import { ReassignAgentForm } from "@/components/cases/reassign-agent-form";
 import { SlaStateBadge } from "@/components/cases/sla-state-badge";
 import { StatusActionButtons } from "@/components/cases/status-action-buttons";
+import { PageBreadcrumb, PageHeader } from "@/components/layout/page-header";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -77,26 +79,45 @@ export function CaseDetail({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="mb-2 flex items-center gap-3">
-            <h1 className="text-2xl font-semibold">{caseData.case_number}</h1>
-            <CaseStatusBadge status={caseData.status} />
-          </div>
-          <p className="text-lg font-medium">{caseData.title}</p>
-          <p className="mt-2 text-muted-foreground">{caseData.description}</p>
-        </div>
-        <Button asChild variant="outline">
-          <Link href="/cases">Back to cases</Link>
-        </Button>
+      <div>
+        <PageBreadcrumb
+          items={[
+            { href: "/cases", label: "Cases" },
+            { label: caseData.case_number },
+          ]}
+        />
+        <PageHeader
+          title={caseData.title}
+          description={caseData.description}
+          badges={
+            <>
+              <CaseStatusBadge status={caseData.status} />
+              <Badge variant="outline">
+                {PRIORITY_LABELS[caseData.priority]} priority
+              </Badge>
+              {resolution ? (
+                <Badge variant="secondary">
+                  Resolution SLA · <SlaStateBadge state={resolution.state} />
+                </Badge>
+              ) : null}
+            </>
+          }
+          action={
+            <Button asChild variant="outline">
+              <Link href="/cases">Back to cases</Link>
+            </Button>
+          }
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Case details</CardTitle>
-              <CardDescription>Adjustment request information</CardDescription>
+              <CardTitle>Request summary</CardTitle>
+              <CardDescription>
+                {caseData.case_number} · adjustment request facts
+              </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               <DetailItem label="Account ID (system)" value={caseData.dealer_id} />

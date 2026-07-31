@@ -3,13 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import type {
   SimulatorReport,
   SimulatorScenarioResult,
@@ -140,17 +133,25 @@ export function SimulatorConsole() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg">Latest run</CardTitle>
-          <CardDescription>
+      <div className="ops-panel space-y-3 p-4">
+        <div>
+          <h2 className="text-lg font-semibold">Latest run</h2>
+          <p className="text-sm text-muted-foreground">
             {summary.updatedAt
               ? `Report updated ${new Date(summary.updatedAt).toLocaleString()}`
               : "No report yet — run a suite to generate results."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap items-center gap-3">
-          <Badge variant={summary.failed === 0 && summary.total > 0 ? "success" : summary.total === 0 ? "secondary" : "destructive"}>
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <Badge
+            variant={
+              summary.failed === 0 && summary.total > 0
+                ? "success"
+                : summary.total === 0
+                  ? "secondary"
+                  : "destructive"
+            }
+          >
             {summary.passed}/{summary.total} passed
           </Badge>
           {summary.failed > 0 && (
@@ -162,7 +163,9 @@ export function SimulatorConsole() {
               variant="outline"
               size="sm"
               disabled={running}
-              onClick={() => refresh().catch((err: Error) => setError(err.message))}
+              onClick={() =>
+                refresh().catch((err: Error) => setError(err.message))
+              }
             >
               Refresh
             </Button>
@@ -175,8 +178,8 @@ export function SimulatorConsole() {
               {running ? "Running…" : "Run all"}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       <div className="flex flex-wrap gap-2">
         <Button
@@ -231,66 +234,66 @@ export function SimulatorConsole() {
           const selected = selectedName === scenario.name;
 
           return (
-            <Card
+            <div
               key={scenario.file}
-              className={selected ? "ring-2 ring-primary/40" : undefined}
+              className={`ops-panel space-y-3 p-4 ${
+                selected ? "ring-2 ring-primary/40" : ""
+              }`}
             >
-              <CardHeader className="space-y-3 pb-3">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <CardTitle className="text-base">{scenario.name}</CardTitle>
-                    <CardDescription>
-                      {scenario.actionCount} actions · {scenario.assertionCount}{" "}
-                      assertions · {scenario.file}
-                    </CardDescription>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {result ? (
-                      <Badge variant={result.ok ? "success" : "destructive"}>
-                        {result.ok ? "PASS" : "FAIL"}
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary">Not run</Badge>
-                    )}
-                    {scenario.tags.map((tag) => (
-                      <Badge key={tag} variant="outline">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <h3 className="font-semibold">{scenario.name}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {scenario.actionCount} actions · {scenario.assertionCount}{" "}
+                    assertions · {scenario.file}
+                  </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  {result ? (
+                    <Badge variant={result.ok ? "success" : "destructive"}>
+                      {result.ok ? "PASS" : "FAIL"}
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary">Not run</Badge>
+                  )}
+                  {scenario.tags.map((tag) => (
+                    <Badge key={tag} variant="outline">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={running}
+                  onClick={() => {
+                    setSelectedName(scenario.name);
+                    void run({ name: scenario.name });
+                  }}
+                >
+                  Run this
+                </Button>
+                {result && (
                   <Button
                     type="button"
                     size="sm"
-                    variant="outline"
-                    disabled={running}
-                    onClick={() => {
-                      setSelectedName(scenario.name);
-                      void run({ name: scenario.name });
-                    }}
+                    variant="ghost"
+                    onClick={() =>
+                      setExpanded((prev) => ({
+                        ...prev,
+                        [scenario.name]: !isOpen,
+                      }))
+                    }
                   >
-                    Run this
+                    {isOpen ? "Hide steps" : "Show steps"}
                   </Button>
-                  {result && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      onClick={() =>
-                        setExpanded((prev) => ({
-                          ...prev,
-                          [scenario.name]: !isOpen,
-                        }))
-                      }
-                    >
-                      {isOpen ? "Hide steps" : "Show steps"}
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
+                )}
+              </div>
               {isOpen && result && (
-                <CardContent className="space-y-2 border-t pt-4">
+                <div className="space-y-2 border-t pt-4">
                   <p className="text-xs text-muted-foreground">
                     {new Date(result.startedAt).toLocaleString()} →{" "}
                     {new Date(result.finishedAt).toLocaleString()}
@@ -330,24 +333,20 @@ export function SimulatorConsole() {
                       </li>
                     ))}
                   </ul>
-                </CardContent>
+                </div>
               )}
-            </Card>
+            </div>
           );
         })}
       </div>
 
       {lastStdout && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Console output</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="max-h-80 overflow-auto rounded-md bg-muted/50 p-3 text-xs leading-relaxed">
-              {lastStdout}
-            </pre>
-          </CardContent>
-        </Card>
+        <div className="ops-panel p-4">
+          <h3 className="mb-2 text-sm font-semibold">Console output</h3>
+          <pre className="max-h-80 overflow-auto rounded-md bg-muted/50 p-3 text-xs leading-relaxed">
+            {lastStdout}
+          </pre>
+        </div>
       )}
     </div>
   );
